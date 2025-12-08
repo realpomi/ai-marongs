@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  nats:
+    image: nats:latest
+    ports:
+      - "4222:4222"  # Client connections
+      - "8222:8222"  # HTTP management
+      - "6222:6222"  # Cluster connections
+    command: "--http_port 8222"
+    networks:
+      - ai-marongs-network
+
+networks:
+  ai-marongs-network:
+    driver: bridge
