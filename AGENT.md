@@ -12,6 +12,61 @@ Python 기반의 Discord Bot과 메시지 처리 시스템으로, NATS 메시지
 Discord User → Discord Bot (Interface) → NATS → Message Processor → NATS → Discord Bot → Discord User
 ```
 
+### 메시지 흐름 상세
+
+```
+Discord User
+    │
+    ▼
+┌─────────────────────────────────────┐
+│  discord-bot/bot.py                 │
+│  DiscordNATSBridge                  │
+│                                     │
+│  on_message() (L163)                │
+│    └─▶ publish_message() (L41)      │
+│           │                         │
+│           │ NATS publish            │
+│           │ "discord.messages"      │
+│           ▼                         │
+│  handle_response() (L127)           │◀─────┐
+│    └─▶ channel.send() (L140)        │      │
+└─────────────────────────────────────┘      │
+                                             │
+              NATS Message Broker            │
+                                             │
+┌─────────────────────────────────────┐      │
+│  message-processor/processor.py     │      │
+│  MessageProcessor                   │      │
+│                                     │
+│  handle_discord_message() (L85)     │      │
+│    └─▶ process_message() (L30)      │      │
+│           │                         │      │
+│           │ NATS publish            │      │
+│           │ "discord.responses"     │──────┘
+│           ▼                         │
+└─────────────────────────────────────┘
+```
+
+### 주요 코드 위치
+
+| 기능 | 파일 | 라인 | 설명 |
+|------|------|------|------|
+| 메시지 수신 | `discord-bot/bot.py` | L163 | `on_message()` - Discord 메시지 이벤트 |
+| 메시지 발행 | `discord-bot/bot.py` | L41 | `publish_message()` - NATS로 메시지 전송 |
+| 응답 구독 | `discord-bot/bot.py` | L35 | `discord.responses` 토픽 구독 |
+| 응답 처리 | `discord-bot/bot.py` | L127 | `handle_response()` - Discord로 응답 전송 |
+| 메시지 구독 | `message-processor/processor.py` | L120 | `discord.messages` 토픽 구독 |
+| 메시지 처리 | `message-processor/processor.py` | L85 | `handle_discord_message()` - 수신 메시지 파싱 |
+| 비즈니스 로직 | `message-processor/processor.py` | L30 | `process_message()` - 실제 처리 로직 |
+| 응답 발행 | `message-processor/processor.py` | L104 | NATS로 응답 전송 |
+
+### NATS 토픽 상세
+
+| 토픽 | 방향 | 발행 위치 | 구독 위치 |
+|------|------|-----------|-----------|
+| `discord.messages` | Bot → Processor | `bot.py:119` | `processor.py:120` |
+| `discord.responses` | Processor → Bot | `processor.py:104` | `bot.py:35` |
+
 ### 두 개의 독립적인 서비스
 
 | 서비스 | 디렉토리 | 역할 |
