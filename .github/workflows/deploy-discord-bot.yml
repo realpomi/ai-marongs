@@ -16,20 +16,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build Docker image
-        run: |
-          docker build -t discord-bot:latest ./discord-bot
-          docker save discord-bot:latest -o /tmp/discord-bot.tar
-
       - name: Stop existing container
         run: |
           docker stop discord-bot || true
           docker rm discord-bot || true
 
-      - name: Load Docker image
+      - name: Build Docker image
         run: |
-          docker load -i /tmp/discord-bot.tar
-          rm -f /tmp/discord-bot.tar
+          docker build -t discord-bot:latest ./discord-bot
 
       - name: Run Discord Bot container
         run: |
