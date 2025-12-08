@@ -38,21 +38,89 @@ class DiscordNATSBridge:
             print(f"Failed to connect to NATS: {e}")
             raise
     
-    async def publish_message(self, channel_id: int, author_id: int, content: str, message_id: int):
+    async def publish_message(self, message: discord.Message):
         """Publish a Discord message to NATS for processing"""
+        # Build comprehensive message data
         message_data = {
-            "channel_id": channel_id,
-            "author_id": author_id,
-            "content": content,
-            "message_id": message_id
+            # Message info
+            "message_id": message.id,
+            "content": message.content,
+            "created_at": message.created_at.isoformat(),
+            "edited_at": message.edited_at.isoformat() if message.edited_at else None,
+            "jump_url": message.jump_url,
+            "pinned": message.pinned,
+            "type": str(message.type),
+
+            # Author info
+            "author": {
+                "id": message.author.id,
+                "name": message.author.name,
+                "display_name": message.author.display_name,
+                "discriminator": message.author.discriminator,
+                "bot": message.author.bot,
+                "avatar_url": str(message.author.avatar.url) if message.author.avatar else None,
+            },
+
+            # Channel info
+            "channel": {
+                "id": message.channel.id,
+                "name": getattr(message.channel, 'name', 'DM'),
+                "type": str(message.channel.type),
+            },
+
+            # Guild (server) info
+            "guild": {
+                "id": message.guild.id,
+                "name": message.guild.name,
+                "member_count": message.guild.member_count,
+            } if message.guild else None,
+
+            # Mentions
+            "mentions": {
+                "users": [{"id": u.id, "name": u.name} for u in message.mentions],
+                "roles": [{"id": r.id, "name": r.name} for r in message.role_mentions],
+                "channels": [{"id": c.id, "name": c.name} for c in message.channel_mentions],
+                "everyone": message.mention_everyone,
+            },
+
+            # Attachments
+            "attachments": [
+                {
+                    "id": a.id,
+                    "filename": a.filename,
+                    "url": a.url,
+                    "size": a.size,
+                    "content_type": a.content_type,
+                }
+                for a in message.attachments
+            ],
+
+            # Embeds
+            "embeds": [e.to_dict() for e in message.embeds],
+
+            # Reply reference
+            "reference": {
+                "message_id": message.reference.message_id,
+                "channel_id": message.reference.channel_id,
+                "guild_id": message.reference.guild_id,
+            } if message.reference else None,
+
+            # Reactions (if any)
+            "reactions": [
+                {
+                    "emoji": str(r.emoji),
+                    "count": r.count,
+                }
+                for r in message.reactions
+            ],
         }
-        
+
         try:
             await nc.publish(
                 "discord.messages",
                 json.dumps(message_data).encode()
             )
-            print(f"Published message to NATS: {message_id}")
+            print(f"Published message to NATS: {message.id}")
         except Exception as e:
             print(f"Failed to publish message to NATS: {e}")
     
@@ -106,12 +174,7 @@ async def on_message(message):
     # Ignore messages that don't mention the bot or use commands
     if bot.user.mentioned_in(message) or message.content.startswith('!'):
         # Publish to NATS for processing
-        await bridge.publish_message(
-            channel_id=message.channel.id,
-            author_id=message.author.id,
-            content=message.content,
-            message_id=message.id
-        )
+        await bridge.publish_message(message)
     
     # Process commands
     await bot.process_commands(message)
