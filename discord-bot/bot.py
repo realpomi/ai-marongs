@@ -1,7 +1,6 @@
 import os
 import asyncio
 import json
-from typing import Optional
 import discord
 from discord.ext import commands
 from nats.aio.client import Client as NATS
@@ -26,9 +25,6 @@ nc = NATS()
 class DiscordNATSBridge:
     """Handles communication between Discord and NATS"""
     
-    def __init__(self):
-        self.pending_responses = {}
-        
     async def connect_nats(self):
         """Connect to NATS server"""
         try:
