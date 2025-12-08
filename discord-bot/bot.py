@@ -97,7 +97,12 @@ async def on_message(message):
     # Ignore messages from the bot itself
     if message.author == bot.user:
         return
-    
+
+    # Instant ping-pong response (no NATS)
+    if message.content.lower() == 'ping':
+        await message.channel.send('Pong!')
+        return
+
     # Ignore messages that don't mention the bot or use commands
     if bot.user.mentioned_in(message) or message.content.startswith('!'):
         # Publish to NATS for processing
@@ -115,7 +120,8 @@ async def on_message(message):
 @bot.command(name='ping')
 async def ping(ctx):
     """Simple ping command to test bot responsiveness"""
-    await ctx.send('Pong!')
+    latency = round(bot.latency * 1000)
+    await ctx.send(f'Pong! 🏓 ({latency}ms)')
 
 
 @bot.command(name='status')
