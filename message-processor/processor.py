@@ -47,8 +47,12 @@ class MessageProcessor:
         
         print(f"Processing message from user {author_id}: {content}")
         
+        # Greeting response for hi/안녕
+        if content.lower() == 'hi' or content == '안녕':
+            return "반갑습니다"
+
         # Example processing logic - replace with your actual implementation
-        if '안녕' in content or 'hello' in content.lower():
+        if 'hello' in content.lower():
             return f"안녕하세요! <@{author_id}>님, 무엇을 도와드릴까요?"
         
         elif '날씨' in content or 'weather' in content.lower():

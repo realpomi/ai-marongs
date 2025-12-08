@@ -1,0 +1,41 @@
+name: Deploy Message Processor
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'message-processor/**'
+      - '.github/workflows/deploy-message-processor.yml'
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Stop existing container
+        run: |
+          docker stop message-processor || true
+          docker rm message-processor || true
+
+      - name: Build Docker image
+        run: |
+          docker build -t message-processor:latest ./message-processor
+
+      - name: Run Message Processor container
+        run: |
+          docker run -d \
+            --name message-processor \
+            --network home-network \
+            -e NATS_URL=nats://nats:4222 \
+            --restart unless-stopped \
+            message-processor:latest
+
+      - name: Verify deployment
+        run: |
+          sleep 5
+          docker ps | grep message-processor
+          docker logs message-processor --tail 20
