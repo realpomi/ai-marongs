@@ -43,31 +43,21 @@ Python 기반의 Discord Bot과 메시지 처리 시스템입니다. NATS를 통
    - 처리 결과를 NATS로 발행
    - Discord Bot과 독립적으로 확장 가능
 
-3. **NATS Server**
+3. **NATS Server** (외부)
    - 두 서비스 간 메시지 브로커
-   - 비동기 통신 지원
-   - 경량이고 빠른 성능
+   - Docker `home-network`에서 `nats` 이름으로 실행 중
+   - 포트 `4222`로 클라이언트 연결
 
 ## 🚀 빠른 시작
 
 ### 사전 요구사항
 
 - Python 3.8 이상
-- Docker 및 Docker Compose (NATS 서버 실행용)
+- Docker
 - Discord Bot Token ([생성 방법](#discord-봇-토큰-생성))
+- NATS 서버 (Docker `home-network`에서 `nats:4222`로 접근 가능해야 함)
 
-### 1. NATS 서버 시작
-
-```bash
-docker-compose up -d
-```
-
-NATS 서버가 다음 포트에서 실행됩니다:
-- `4222`: 클라이언트 연결
-- `8222`: HTTP 관리
-- `6222`: 클러스터 연결
-
-### 2. Discord Bot 설정 및 실행
+### 1. Discord Bot 설정 및 실행
 
 ```bash
 cd discord-bot
@@ -77,7 +67,7 @@ cp .env.example .env
 python bot.py
 ```
 
-### 3. Message Processor 설정 및 실행
+### 2. Message Processor 설정 및 실행
 
 ```bash
 cd message-processor
@@ -86,12 +76,35 @@ cp .env.example .env
 python processor.py
 ```
 
+### Docker로 Discord Bot 실행
+
+```bash
+# 이미지 빌드
+docker build -t discord-bot ./discord-bot
+
+# 이미지를 tar로 저장 (필요시)
+docker save discord-bot -o discord-bot.tar
+
+# 이미지 로드 (다른 머신에서)
+docker load -i discord-bot.tar
+
+# 컨테이너 실행
+docker run -d \
+  --name discord-bot \
+  --network home-network \
+  -e DISCORD_TOKEN=your_token \
+  -e NATS_URL=nats://nats:4222 \
+  --restart unless-stopped \
+  discord-bot
+```
+
 ## 📁 프로젝트 구조
 
 ```
 ai-marongs/
 ├── discord-bot/              # Discord 봇 인터페이스
 │   ├── bot.py               # 봇 메인 스크립트
+│   ├── Dockerfile           # Docker 이미지 빌드
 │   ├── requirements.txt     # 봇 의존성
 │   ├── .env.example         # 환경 변수 예제
 │   └── README.md            # 봇 상세 문서
@@ -100,7 +113,7 @@ ai-marongs/
 │   ├── requirements.txt     # 프로세서 의존성
 │   ├── .env.example         # 환경 변수 예제
 │   └── README.md            # 프로세서 상세 문서
-├── docker-compose.yml        # NATS 서버 설정
+├── docker-compose.yml        # Discord Bot 컨테이너 설정
 ├── .gitignore               # Git 무시 파일
 └── README.md                # 이 파일
 ```
@@ -126,12 +139,12 @@ ai-marongs/
 #### Discord Bot (`.env`)
 ```env
 DISCORD_TOKEN=your_discord_bot_token_here
-NATS_URL=nats://localhost:4222
+NATS_URL=nats://nats:4222
 ```
 
 #### Message Processor (`.env`)
 ```env
-NATS_URL=nats://localhost:4222
+NATS_URL=nats://nats:4222
 ```
 
 ## 💡 사용 방법
@@ -139,7 +152,7 @@ NATS_URL=nats://localhost:4222
 봇이 실행되면 Discord에서 다음과 같이 사용할 수 있습니다:
 
 1. **봇 멘션**: `@BotName 안녕하세요`
-2. **명령어 사용**: 
+2. **명령어 사용**:
    - `!ping` - 봇 응답 확인
    - `!status` - NATS 연결 상태 확인
 
@@ -190,7 +203,6 @@ pip install -r requirements.txt
 
 - Discord Bot: 콘솔 출력으로 연결 상태 및 메시지 처리 로그 확인
 - Message Processor: 콘솔 출력으로 메시지 수신 및 처리 로그 확인
-- NATS: `http://localhost:8222` 에서 관리 인터페이스 확인
 
 ## 📝 커스터마이징
 
@@ -201,13 +213,13 @@ pip install -r requirements.txt
 ```python
 async def process_message(self, message_data: Dict[str, Any]) -> str:
     content = message_data.get('content', '')
-    
+
     # 여기에 커스텀 로직 추가
     # 예: AI 모델 호출, 데이터베이스 조회, 외부 API 호출 등
-    
+
     if '특정키워드' in content:
         return "맞춤형 응답"
-    
+
     return "기본 응답"
 ```
 
