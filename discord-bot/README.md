@@ -2,6 +2,11 @@
 
 Discord 인터페이스를 담당하는 봇입니다. 사용자의 메시지를 받아 NATS 서버로 전달하고, 처리 결과를 다시 Discord로 전송합니다.
 
+## 사전 요구사항
+
+- NATS 서버가 Docker `home-network`에서 `nats` 이름으로 실행 중이어야 합니다
+- NATS 포트: `4222`
+
 ## 설치
 
 ```bash
@@ -18,7 +23,7 @@ cp .env.example .env
 2. `.env` 파일에 Discord 봇 토큰을 설정합니다:
 ```
 DISCORD_TOKEN=your_actual_discord_bot_token
-NATS_URL=nats://localhost:4222
+NATS_URL=nats://nats:4222
 ```
 
 ## Discord 봇 토큰 생성
@@ -33,8 +38,25 @@ NATS_URL=nats://localhost:4222
 
 ## 실행
 
+### 로컬 실행
 ```bash
 python bot.py
+```
+
+### Docker로 실행
+
+```bash
+# 이미지 빌드
+docker build -t discord-bot .
+
+# 컨테이너 실행
+docker run -d \
+  --name discord-bot \
+  --network home-network \
+  -e DISCORD_TOKEN=your_token \
+  -e NATS_URL=nats://nats:4222 \
+  --restart unless-stopped \
+  discord-bot
 ```
 
 ## 기능

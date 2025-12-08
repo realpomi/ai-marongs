@@ -1,28 +1,15 @@
 version: '3.8'
 
 services:
-  nats:
-    image: nats:latest
-    ports:
-      - "4222:4222"  # Client connections
-      - "8222:8222"  # HTTP management
-      - "6222:6222"  # Cluster connections
-    command: "--http_port 8222"
-    networks:
-      - ai-marongs-network
-    restart: unless-stopped
-
   discord-bot:
     build: ./discord-bot
     environment:
       - DISCORD_TOKEN=${DISCORD_TOKEN}
       - NATS_URL=nats://nats:4222
-    depends_on:
-      - nats
     networks:
-      - ai-marongs-network
+      - home-network
     restart: unless-stopped
 
 networks:
-  ai-marongs-network:
-    driver: bridge
+  home-network:
+    external: true
