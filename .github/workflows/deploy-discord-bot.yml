@@ -1,0 +1,60 @@
+name: Deploy Discord Bot
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'discord-bot/**'
+      - '.github/workflows/deploy-discord-bot.yml'
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Stop existing containers
+        run: |
+          docker stop discord-bot || true
+          docker rm discord-bot || true
+
+      - name: Build Docker image
+        run: |
+          docker build -t discord-bot ./discord-bot
+
+      - name: Create Docker network (if not exists)
+        run: |
+          docker network create ai-marongs-network || true
+
+      - name: Ensure NATS is running
+        run: |
+          if ! docker ps --format '{{.Names}}' | grep -q '^nats$'; then
+            docker stop nats || true
+            docker rm nats || true
+            docker run -d \
+              --name nats \
+              --network ai-marongs-network \
+              -p 4222:4222 \
+              -p 8222:8222 \
+              --restart unless-stopped \
+              nats:latest --http_port 8222
+          fi
+
+      - name: Run Discord Bot container
+        run: |
+          docker run -d \
+            --name discord-bot \
+            --network ai-marongs-network \
+            -e DISCORD_TOKEN=${{ secrets.DISCORD_TOKEN }} \
+            -e NATS_URL=nats://nats:4222 \
+            --restart unless-stopped \
+            discord-bot
+
+      - name: Verify deployment
+        run: |
+          sleep 5
+          docker ps | grep discord-bot
+          docker logs discord-bot --tail 20
