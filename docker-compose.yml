@@ -10,6 +10,18 @@ services:
     command: "--http_port 8222"
     networks:
       - ai-marongs-network
+    restart: unless-stopped
+
+  discord-bot:
+    build: ./discord-bot
+    environment:
+      - DISCORD_TOKEN=${DISCORD_TOKEN}
+      - NATS_URL=nats://nats:4222
+    depends_on:
+      - nats
+    networks:
+      - ai-marongs-network
+    restart: unless-stopped
 
 networks:
   ai-marongs-network:
