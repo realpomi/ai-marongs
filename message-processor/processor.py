@@ -31,19 +31,31 @@ class MessageProcessor:
         """
         Process the message and generate a response.
         This is where you implement your actual message processing logic.
-        
+
         Args:
-            message_data: Dictionary containing message information
-                - channel_id: Discord channel ID
-                - author_id: Discord user ID
-                - content: Message content
+            message_data: Dictionary containing full Discord message information
                 - message_id: Discord message ID
-        
+                - content: Message content
+                - created_at: Message creation timestamp (ISO format)
+                - edited_at: Message edit timestamp (ISO format) or None
+                - jump_url: URL to jump to this message
+                - pinned: Whether the message is pinned
+                - type: Message type
+                - author: {id, name, display_name, discriminator, bot, avatar_url}
+                - channel: {id, name, type}
+                - guild: {id, name, member_count} or None for DMs
+                - mentions: {users: [{id, name}], roles: [{id, name}], channels: [{id, name}], everyone: bool}
+                - attachments: [{id, filename, url, size, content_type}]
+                - embeds: List of embed dictionaries
+                - reference: {message_id, channel_id, guild_id} or None
+                - reactions: [{emoji, count}]
+
         Returns:
             Response string to send back to Discord
         """
         content = message_data.get('content', '')
-        author_id = message_data.get('author_id')
+        author = message_data.get('author', {})
+        author_id = author.get('id')
         
         print(f"Processing message from user {author_id}: {content}")
         
@@ -81,8 +93,9 @@ class MessageProcessor:
             response = await self.process_message(message_data)
             
             # Prepare response data
+            channel = message_data.get("channel", {})
             response_data = {
-                "channel_id": message_data.get("channel_id"),
+                "channel_id": channel.get("id"),
                 "response": response,
                 "original_message_id": message_data.get("message_id")
             }
