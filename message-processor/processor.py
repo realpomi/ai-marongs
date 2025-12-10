@@ -59,8 +59,8 @@ class MessageProcessor:
         
         print(f"Processing message from user {author_id}: {content}")
         
-        # Greeting response for hi/안녕
-        if content.lower() == 'hi' or content == '안녕':
+        # Greeting response for hi/안녕 (handles mentions like "<@123> 안녕")
+        if content.lower().strip() == 'hi' or content.strip() == '안녕' or '안녕' in content or 'hi' in content.lower().split():
             return "반갑습니다"
 
         # Example processing logic - replace with your actual implementation
