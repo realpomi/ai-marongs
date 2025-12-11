@@ -32,6 +32,7 @@ jobs:
             --network home-network \
             -e DISCORD_TOKEN=${{ secrets.DISCORD_TOKEN }} \
             -e NATS_URL=nats://nats:4222 \
+            -e DEBUG_WEBHOOK_URL=${{ secrets.DEBUG_WEBHOOK_URL }} \
             --restart unless-stopped \
             discord-bot:latest
 

@@ -156,6 +156,7 @@ class DiscordNATSBridge:
                 json.dumps(message_data).encode()
             )
             print(f"Published message to NATS: {message.id}")
+            print(f"[Discord → 메시지처리기] 전송 데이터: {json.dumps(message_data, ensure_ascii=False, indent=2)}")
 
             # Send debug webhook: Discord → Processor
             await send_debug_webhook(
