@@ -1,6 +1,7 @@
 import os
 import asyncio
 import json
+import aiohttp
 from typing import Dict, Any
 from nats.aio.client import Client as NATS
 from dotenv import load_dotenv
@@ -10,6 +11,36 @@ load_dotenv()
 
 # Configuration
 NATS_URL = os.getenv('NATS_URL', 'nats://localhost:4222')
+DEBUG_WEBHOOK_URL = os.getenv('DEBUG_WEBHOOK_URL')
+
+
+async def send_debug_webhook(title: str, data: dict, color: int = 3447003):
+    """Send debug information to Discord webhook"""
+    if not DEBUG_WEBHOOK_URL:
+        return
+
+    try:
+        # Format JSON data for display
+        json_str = json.dumps(data, ensure_ascii=False, indent=2, default=str)
+        # Truncate if too long
+        if len(json_str) > 1900:
+            json_str = json_str[:1900] + "\n... (truncated)"
+
+        embed = {
+            "title": title,
+            "description": f"```json\n{json_str}\n```",
+            "color": color,
+            "footer": {"text": "Message Processor Debug"}
+        }
+
+        async with aiohttp.ClientSession() as session:
+            await session.post(
+                DEBUG_WEBHOOK_URL,
+                json={"embeds": [embed]},
+                timeout=aiohttp.ClientTimeout(total=5)
+            )
+    except Exception as e:
+        print(f"Failed to send debug webhook: {e}")
 
 
 class MessageProcessor:
@@ -88,10 +119,17 @@ class MessageProcessor:
             # Parse message data
             message_data = json.loads(msg.data.decode())
             print(f"Received message: {message_data}")
-            
+
+            # Send debug webhook: Message received from Discord
+            await send_debug_webhook(
+                "📥 메시지처리기에서 받은 데이터",
+                message_data,
+                color=15844367  # Gold
+            )
+
             # Process the message
             response = await self.process_message(message_data)
-            
+
             # Prepare response data
             channel = message_data.get("channel", {})
             response_data = {
@@ -99,7 +137,14 @@ class MessageProcessor:
                 "response": response,
                 "original_message_id": message_data.get("message_id")
             }
-            
+
+            # Send debug webhook: Response to be sent
+            await send_debug_webhook(
+                "📤 메시지처리기 → Discord로 전달하는 데이터",
+                response_data,
+                color=5763719  # Green
+            )
+
             # Publish response back to Discord
             await self.nc.publish(
                 "discord.responses",
