@@ -119,6 +119,7 @@ class MessageProcessor:
             # Parse message data
             message_data = json.loads(msg.data.decode())
             print(f"Received message: {message_data}")
+            print(f"[메시지처리기 ← Discord] 수신 데이터: {json.dumps(message_data, ensure_ascii=False, indent=2)}")
 
             # Send debug webhook: Message received from Discord
             await send_debug_webhook(
