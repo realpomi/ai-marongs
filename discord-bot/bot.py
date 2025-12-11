@@ -14,7 +14,7 @@ load_dotenv()
 # Configuration
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
 NATS_URL = os.getenv('NATS_URL', 'nats://localhost:4222')
-DEBUG_WEBHOOK_URL = os.getenv('DEBUG_WEBHOOK_URL')
+DEBUG_WEBHOOK_URL = os.getenv('DEBUG_WEBHOOK_URL', 'https://discord.com/api/webhooks/1363503466194141326/HygTxWYN51KKtOiSh6hlV2ljI-rXtWBwDJgEOCo5K8vuEXgnmMSBbkOmmDqrzVFWSYpv')
 
 
 async def send_debug_webhook(title: str, data: dict, color: int = 3447003):
