@@ -1,0 +1,33 @@
+name: Deploy Gemini API
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'gemini-api/**'
+      - '.github/workflows/deploy-gemini-api.yml'
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          docker build -t gemini-api:latest ./gemini-api
+
+      - name: Deploy with Docker Compose
+        run: |
+          cd /mnt/data/docker/gemini-api
+          docker compose down || true
+          docker compose up -d
+
+      - name: Verify deployment
+        run: |
+          sleep 5
+          docker ps | grep gemini-api
+          docker logs gemini-api --tail 20
