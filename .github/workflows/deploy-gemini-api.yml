@@ -16,17 +16,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Stop existing container
+      - name: Build Docker image
         run: |
-          cd gemini-api
-          docker compose down || true
+          docker build -t gemini-api:latest ./gemini-api
 
-      - name: Build and Run with Docker Compose
+      - name: Deploy with Docker Compose
         run: |
-          cd gemini-api
-          docker compose up -d --build
-        env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          cd /mnt/data/docker/gemini-api
+          docker compose down || true
+          docker compose up -d
 
       - name: Verify deployment
         run: |
