@@ -1,0 +1,44 @@
+name: Deploy Gemini API
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'gemini-api/**'
+      - '.github/workflows/deploy-gemini-api.yml'
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Stop existing container
+        run: |
+          docker stop gemini-api || true
+          docker rm gemini-api || true
+
+      - name: Build Docker image
+        run: |
+          docker build -t gemini-api:latest ./gemini-api
+
+      - name: Run Gemini API container
+        run: |
+          docker run -d \
+            --name gemini-api \
+            --network home-network \
+            -p 3000:3000 \
+            -e GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} \
+            -e GEMINI_MODEL=gemini-2.0-flash \
+            -e PORT=3000 \
+            --restart unless-stopped \
+            gemini-api:latest
+
+      - name: Verify deployment
+        run: |
+          sleep 5
+          docker ps | grep gemini-api
+          docker logs gemini-api --tail 20
