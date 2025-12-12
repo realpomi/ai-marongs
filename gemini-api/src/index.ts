@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { reportRoutes } from './routes/report';
+import { filesRoutes } from './routes/files';
 
 const app = new Hono();
 
@@ -24,6 +25,7 @@ app.get('/health', (c) => {
 
 // Routes
 app.route('/api/report', reportRoutes);
+app.route('/api/files', filesRoutes);
 
 // Error handling
 app.onError((err, c) => {
