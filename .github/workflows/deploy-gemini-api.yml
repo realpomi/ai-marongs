@@ -18,24 +18,15 @@ jobs:
 
       - name: Stop existing container
         run: |
-          docker stop gemini-api || true
-          docker rm gemini-api || true
+          cd gemini-api
+          docker compose down || true
 
-      - name: Build Docker image
+      - name: Build and Run with Docker Compose
         run: |
-          docker build -t gemini-api:latest ./gemini-api
-
-      - name: Run Gemini API container
-        run: |
-          docker run -d \
-            --name gemini-api \
-            --network home-network \
-            -p 3000:3000 \
-            -e GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} \
-            -e GEMINI_MODEL=gemini-2.0-flash \
-            -e PORT=3000 \
-            --restart unless-stopped \
-            gemini-api:latest
+          cd gemini-api
+          docker compose up -d --build
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
       - name: Verify deployment
         run: |

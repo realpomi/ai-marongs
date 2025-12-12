@@ -1,0 +1,17 @@
+services:
+  gemini-api:
+    build: .
+    container_name: gemini-api
+    restart: unless-stopped
+    ports:
+      - "10000:3000"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL=gemini-2.0-flash
+      - PORT=3000
+    networks:
+      - home-network
+
+networks:
+  home-network:
+    external: true
