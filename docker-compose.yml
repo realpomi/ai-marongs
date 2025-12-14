@@ -10,6 +10,40 @@ services:
       - home-network
     restart: unless-stopped
 
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=${DB_NAME:-stocks}
+      - POSTGRES_USER=${DB_ID:-stocks}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - home-network
+    restart: unless-stopped
+
+  stock-cralwer:
+    build: ./stock-cralwer
+    depends_on:
+      - postgres
+    env_file:
+      - stock-cralwer/.env
+    environment:
+      - DB_HOST=${DB_HOST:-postgres}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_NAME=${DB_NAME:-stocks}
+      - DB_ID=${DB_ID:-stocks}
+      - DB_PASSWORD=${DB_PASSWORD:-password}
+      - NATS=${NATS:-nats://nats:4222}
+    networks:
+      - home-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
 networks:
   home-network:
     external: true
