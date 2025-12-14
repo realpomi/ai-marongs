@@ -5,6 +5,7 @@ import aiohttp
 from typing import Dict, Any
 from nats.aio.client import Client as NATS
 from dotenv import load_dotenv
+from kis_api import KisApi
 
 # Load environment variables
 load_dotenv()
@@ -48,6 +49,7 @@ class MessageProcessor:
     
     def __init__(self):
         self.nc = NATS()
+        self.kis_api = KisApi()
     
     async def connect(self):
         """Connect to NATS server"""
@@ -101,9 +103,39 @@ class MessageProcessor:
         elif '날씨' in content or 'weather' in content.lower():
             return "죄송합니다. 날씨 정보 기능은 아직 구현되지 않았습니다."
         
+        elif content.startswith('!가격'):
+            # Parse ticker
+            try:
+                parts = content.split()
+                if len(parts) < 2:
+                    return "사용법: !가격 (티커) (예: !가격 AAPL)"
+
+                ticker = parts[1]
+
+                # Fetch price
+                result = await self.kis_api.get_current_price(ticker)
+
+                if "error" in result:
+                    return f"오류 발생: {result['error']}"
+
+                price = float(result['price'])
+                diff = float(result['diff'])
+                rate = float(result['rate'])
+
+                sign = ""
+                if diff > 0:
+                    sign = "+"
+
+                return f"**{result['ticker']}** ({result['exchange']})\n현재가: ${price:,.2f} ({sign}{diff} / {sign}{rate}%)"
+
+            except Exception as e:
+                print(f"Error processing price command: {e}")
+                return "가격 정보를 가져오는 중 오류가 발생했습니다."
+
         elif '도움' in content or 'help' in content.lower():
             return """
 **사용 가능한 명령어:**
+- !가격 (티커): 미국 주식 현재가 조회 (예: !가격 AAPL)
 - 안녕/hello: 인사
 - 날씨/weather: 날씨 정보 (준비 중)
 - 도움/help: 도움말
