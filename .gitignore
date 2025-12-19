@@ -40,6 +40,7 @@ venv.bak/
 # Environment Variables
 .env
 .env.local
+.access_token*
 
 # Logs
 *.log

@@ -24,6 +24,10 @@ class Settings:
     db_user: str
     db_password: str
     nats_url: str
+    # 캔들 수집 설정
+    candle_60m_interval_minutes: int
+    daily_candle_collect_time: str
+    api_request_delay: float
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -49,6 +53,10 @@ class Settings:
             db_user=os.getenv("DB_ID", "stocks"),
             db_password=os.getenv("DB_PASSWORD", "password"),
             nats_url=os.getenv("NATS", "nats://nats:4222"),
+            # 캔들 수집 설정
+            candle_60m_interval_minutes=int(os.getenv("CANDLE_60M_INTERVAL_MINUTES", "60")),
+            daily_candle_collect_time=os.getenv("DAILY_CANDLE_COLLECT_TIME", "07:00"),
+            api_request_delay=float(os.getenv("API_REQUEST_DELAY", "0.5")),
         )
 
     @property
