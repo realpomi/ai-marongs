@@ -91,24 +91,46 @@ def ensure_us_stock_candles_table() -> None:
                     low_price NUMERIC(18, 4) NOT NULL,
                     close_price NUMERIC(18, 4) NOT NULL,
                     volume BIGINT NOT NULL,
+                    source TEXT NOT NULL DEFAULT 'kis',
                     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-                    CONSTRAINT uq_us_stock_candles UNIQUE(symbol, interval, candle_time)
+                    CONSTRAINT uq_us_stock_candles UNIQUE(symbol, interval, candle_time, source)
                 );
                 CREATE INDEX IF NOT EXISTS idx_us_stock_candles_lookup
                     ON us_stock_candles(symbol, interval, candle_time DESC);
+                CREATE INDEX IF NOT EXISTS idx_us_stock_candles_source
+                    ON us_stock_candles(source);
+                """
+            )
+            # source 컬럼이 없으면 추가 (기존 테이블 마이그레이션)
+            cursor.execute(
+                """
+                DO $$
+                BEGIN
+                    IF NOT EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_name = 'us_stock_candles' AND column_name = 'source'
+                    ) THEN
+                        ALTER TABLE us_stock_candles ADD COLUMN source TEXT NOT NULL DEFAULT 'kis';
+                        DROP INDEX IF EXISTS uq_us_stock_candles;
+                        ALTER TABLE us_stock_candles DROP CONSTRAINT IF EXISTS uq_us_stock_candles;
+                        ALTER TABLE us_stock_candles ADD CONSTRAINT uq_us_stock_candles UNIQUE(symbol, interval, candle_time, source);
+                        CREATE INDEX IF NOT EXISTS idx_us_stock_candles_source ON us_stock_candles(source);
+                    END IF;
+                END $$;
                 """
             )
             conn.commit()
     logger.info("us_stock_candles 테이블을 확인했습니다.")
 
 
-def save_us_stock_candles(symbol: str, interval: str, candles: List[dict]) -> int:
+def save_us_stock_candles(symbol: str, interval: str, candles: List[dict], source: str = "kis") -> int:
     """미국주식 캔들 데이터를 저장합니다.
 
     Args:
         symbol: 종목 코드 (예: AAPL)
         interval: 주기 (예: '60m', '1d')
         candles: API 응답 데이터 리스트
+        source: 데이터 소스 ('kis': 한국투자증권, 'yf': yfinance)
     """
     if not candles:
         return 0
@@ -133,6 +155,7 @@ def save_us_stock_candles(symbol: str, interval: str, candles: List[dict]) -> in
                 float(item.get("low", 0)),
                 float(item.get("clos", item.get("last", 0))),
                 int(item.get("tvol", item.get("evol", 0))),
+                source,
             ))
         except (ValueError, KeyError) as e:
             logger.warning("캔들 데이터 파싱 실패: %s", e)
@@ -145,8 +168,8 @@ def save_us_stock_candles(symbol: str, interval: str, candles: List[dict]) -> in
         with conn.cursor() as cursor:
             cursor.executemany(
                 """
-                INSERT INTO us_stock_candles (symbol, interval, candle_time, open_price, high_price, low_price, close_price, volume)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                INSERT INTO us_stock_candles (symbol, interval, candle_time, open_price, high_price, low_price, close_price, volume, source)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT ON CONSTRAINT uq_us_stock_candles DO UPDATE SET
                     open_price = EXCLUDED.open_price,
                     high_price = EXCLUDED.high_price,
@@ -158,5 +181,5 @@ def save_us_stock_candles(symbol: str, interval: str, candles: List[dict]) -> in
             )
             conn.commit()
 
-    logger.info("%s: %d건의 %s 데이터를 저장했습니다.", symbol, len(records), interval)
+    logger.info("%s: %d건의 %s 데이터를 저장했습니다. (source=%s)", symbol, len(records), interval, source)
     return len(records)

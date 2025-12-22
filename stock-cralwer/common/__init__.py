@@ -22,6 +22,8 @@ from .ticker_repository import (
     get_ticker,
     update_ticker,
 )
+from .yfinance_api import YFinanceApi, CandleData
+from .tiingo_api import TiingoApi, TiingoCandleData
 
 __all__ = [
     # DB
@@ -36,6 +38,12 @@ __all__ = [
     "save_us_stock_candles",
     # KIS API
     "KisApi",
+    # yfinance API
+    "YFinanceApi",
+    "CandleData",
+    # Tiingo API
+    "TiingoApi",
+    "TiingoCandleData",
     # Ticker Repository
     "ManagedTicker",
     "ensure_managed_tickers_table",

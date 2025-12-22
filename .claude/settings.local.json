@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python -m py_compile:*)"
+      "Bash(python -m py_compile:*)",
+      "Bash(tree:*)",
+      "Bash(find:*)",
+      "Bash(python:*)",
+      "Bash(curl:*)"
     ]
   }
 }

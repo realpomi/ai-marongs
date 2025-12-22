@@ -125,6 +125,127 @@ def cmd_collect_daily(args):
         print(f"  {r.symbol}: {status} ({r.records_saved}건)")
 
 
+def cmd_yf_collect_60m(args):
+    """yfinance로 60분봉을 수집합니다 (프리마켓/애프터마켓 포함)."""
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+    setup()
+    from yfinance_collector import YFinanceCollector
+
+    collector = YFinanceCollector(request_delay=1.0)
+    results = collector.collect_60m_candles(
+        period=args.period,
+        include_extended_hours=args.extended,
+    )
+
+    print("\n=== yfinance 60분봉 수집 결과 ===")
+    for r in results:
+        status = "성공" if r.success else f"실패: {r.error_message}"
+        print(f"  {r.symbol}: {status} ({r.records_saved}건)")
+
+
+def cmd_yf_collect_daily(args):
+    """yfinance로 일봉을 수집합니다."""
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+    setup()
+    from yfinance_collector import YFinanceCollector
+
+    collector = YFinanceCollector(request_delay=1.0)
+    results = collector.collect_daily_candles(period=args.period)
+
+    print("\n=== yfinance 일봉 수집 결과 ===")
+    for r in results:
+        status = "성공" if r.success else f"실패: {r.error_message}"
+        print(f"  {r.symbol}: {status} ({r.records_saved}건)")
+
+
+def cmd_yf_collect_single(args):
+    """yfinance로 단일 종목을 수집합니다."""
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+    setup()
+    from yfinance_collector import YFinanceCollector
+
+    collector = YFinanceCollector(request_delay=1.0)
+
+    if args.interval == "60m":
+        result = collector.collect_single_ticker_60m(
+            symbol=args.symbol,
+            period=args.period,
+            include_extended_hours=args.extended,
+        )
+    else:
+        result = collector.collect_single_ticker_daily(
+            symbol=args.symbol,
+            period=args.period,
+        )
+
+    status = "성공" if result.success else f"실패: {result.error_message}"
+    print(f"\n{args.symbol} ({args.interval}): {status} ({result.records_saved}건)")
+
+
+def cmd_tiingo_collect_60m(args):
+    """Tiingo로 60분봉을 수집합니다 (프리마켓/애프터마켓 포함)."""
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+    setup()
+    from tiingo_collector import TiingoCollector
+
+    # 무료 티어: 시간당 50 requests = 75초 간격 (기본값)
+    collector = TiingoCollector()
+    results = collector.collect_60m_candles(
+        days=args.days,
+        include_after_hours=args.extended,
+    )
+
+    print("\n=== Tiingo 60분봉 수집 결과 ===")
+    for r in results:
+        status = "성공" if r.success else f"실패: {r.error_message}"
+        print(f"  {r.symbol}: {status} ({r.records_saved}건)")
+
+
+def cmd_tiingo_collect_daily(args):
+    """Tiingo로 일봉을 수집합니다."""
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+    setup()
+    from tiingo_collector import TiingoCollector
+
+    # 무료 티어: 시간당 50 requests = 75초 간격 (기본값)
+    collector = TiingoCollector()
+    results = collector.collect_daily_candles(days=args.days)
+
+    print("\n=== Tiingo 일봉 수집 결과 ===")
+    for r in results:
+        status = "성공" if r.success else f"실패: {r.error_message}"
+        print(f"  {r.symbol}: {status} ({r.records_saved}건)")
+
+
+def cmd_tiingo_collect_single(args):
+    """Tiingo로 단일 종목을 수집합니다."""
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+    setup()
+    from tiingo_collector import TiingoCollector
+    from datetime import datetime, timedelta
+
+    # 단일 종목은 대기 시간 불필요
+    collector = TiingoCollector(request_delay=0)
+
+    if args.interval == "60m":
+        result = collector.collect_single_ticker_60m(
+            symbol=args.symbol,
+            days=args.days,
+            include_after_hours=args.extended,
+        )
+    else:
+        end_date = datetime.now().strftime("%Y-%m-%d")
+        start_date = (datetime.now() - timedelta(days=args.days)).strftime("%Y-%m-%d")
+        result = collector.collect_single_ticker_daily(
+            symbol=args.symbol,
+            start_date=start_date,
+            end_date=end_date,
+        )
+
+    status = "성공" if result.success else f"실패: {result.error_message}"
+    print(f"\n{args.symbol} ({args.interval}): {status} ({result.records_saved}건)")
+
+
 def main():
     parser = argparse.ArgumentParser(description="캔들 수집기 CLI")
     subparsers = parser.add_subparsers(dest="command", help="명령어")
@@ -159,6 +280,48 @@ def main():
     # collect-daily
     p_daily = subparsers.add_parser("collect-daily", help="일봉 수집")
     p_daily.set_defaults(func=cmd_collect_daily)
+
+    # yf-collect-60m (yfinance 60분봉)
+    p_yf_60m = subparsers.add_parser("yf-collect-60m", help="yfinance 60분봉 수집 (시간외 포함)")
+    p_yf_60m.add_argument("--period", "-p", default="5d", help="조회 기간 (기본: 5d)")
+    p_yf_60m.add_argument("--extended", "-x", action="store_true", default=True, help="시간외 데이터 포함 (기본: True)")
+    p_yf_60m.add_argument("--no-extended", dest="extended", action="store_false", help="시간외 데이터 제외")
+    p_yf_60m.set_defaults(func=cmd_yf_collect_60m)
+
+    # yf-collect-daily (yfinance 일봉)
+    p_yf_daily = subparsers.add_parser("yf-collect-daily", help="yfinance 일봉 수집")
+    p_yf_daily.add_argument("--period", "-p", default="1mo", help="조회 기간 (기본: 1mo)")
+    p_yf_daily.set_defaults(func=cmd_yf_collect_daily)
+
+    # yf-collect (yfinance 단일 종목)
+    p_yf_single = subparsers.add_parser("yf-collect", help="yfinance 단일 종목 수집")
+    p_yf_single.add_argument("symbol", help="종목 코드 (예: AAPL)")
+    p_yf_single.add_argument("--interval", "-i", default="60m", choices=["60m", "daily"], help="주기 (기본: 60m)")
+    p_yf_single.add_argument("--period", "-p", default="5d", help="조회 기간 (기본: 5d)")
+    p_yf_single.add_argument("--extended", "-x", action="store_true", default=True, help="시간외 데이터 포함")
+    p_yf_single.add_argument("--no-extended", dest="extended", action="store_false", help="시간외 데이터 제외")
+    p_yf_single.set_defaults(func=cmd_yf_collect_single)
+
+    # tiingo-collect-60m (Tiingo 60분봉)
+    p_tiingo_60m = subparsers.add_parser("tiingo-collect-60m", help="Tiingo 60분봉 수집 (시간외 포함)")
+    p_tiingo_60m.add_argument("--days", "-d", type=int, default=5, help="조회 기간 (일, 기본: 5, 최대: 5)")
+    p_tiingo_60m.add_argument("--extended", "-x", action="store_true", default=True, help="시간외 데이터 포함 (기본: True)")
+    p_tiingo_60m.add_argument("--no-extended", dest="extended", action="store_false", help="시간외 데이터 제외")
+    p_tiingo_60m.set_defaults(func=cmd_tiingo_collect_60m)
+
+    # tiingo-collect-daily (Tiingo 일봉)
+    p_tiingo_daily = subparsers.add_parser("tiingo-collect-daily", help="Tiingo 일봉 수집")
+    p_tiingo_daily.add_argument("--days", "-d", type=int, default=30, help="조회 기간 (일, 기본: 30)")
+    p_tiingo_daily.set_defaults(func=cmd_tiingo_collect_daily)
+
+    # tiingo-collect (Tiingo 단일 종목)
+    p_tiingo_single = subparsers.add_parser("tiingo-collect", help="Tiingo 단일 종목 수집")
+    p_tiingo_single.add_argument("symbol", help="종목 코드 (예: AAPL)")
+    p_tiingo_single.add_argument("--interval", "-i", default="60m", choices=["60m", "daily"], help="주기 (기본: 60m)")
+    p_tiingo_single.add_argument("--days", "-d", type=int, default=5, help="조회 기간 (일, 기본: 5)")
+    p_tiingo_single.add_argument("--extended", "-x", action="store_true", default=True, help="시간외 데이터 포함")
+    p_tiingo_single.add_argument("--no-extended", dest="extended", action="store_false", help="시간외 데이터 제외")
+    p_tiingo_single.set_defaults(func=cmd_tiingo_collect_single)
 
     args = parser.parse_args()
     if args.command is None:
