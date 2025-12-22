@@ -1,0 +1,8 @@
+{
+  "track_id": "stock_ai_report_20251222",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2025-12-22T10:45:00Z",
+  "updated_at": "2025-12-22T10:45:00Z",
+  "description": "주식 데이터 수집 고도화 및 AI 분석 리포트 생성 기본 파이프라인 구축"
+}
