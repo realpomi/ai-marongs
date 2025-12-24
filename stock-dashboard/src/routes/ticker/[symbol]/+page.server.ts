@@ -10,15 +10,33 @@ export const load: PageServerLoad = async ({ params, url }) => {
     SELECT * FROM managed_tickers WHERE symbol = ${symbol}
   `;
 
-  // Fetch Daily Candles (Latest 30)
-  const dailyCandles = await sql`
+  // Fetch Daily Candles (Latest 31 to calculate change for top 30)
+  const rawDailyCandles = await sql`
     SELECT * FROM us_stock_candles 
     WHERE symbol = ${symbol} 
       AND interval = 'daily' 
       AND source = ${source}
     ORDER BY candle_time DESC 
-    LIMIT 30
+    LIMIT 31
   `;
+
+  const dailyCandles = rawDailyCandles.slice(0, 30).map((candle, index) => {
+    const prevCandle = rawDailyCandles[index + 1];
+    let changePercent = null;
+
+    if (prevCandle) {
+      const currentClose = Number(candle.close_price);
+      const prevClose = Number(prevCandle.close_price);
+      if (prevClose !== 0) {
+        changePercent = ((currentClose - prevClose) / prevClose) * 100;
+      }
+    }
+
+    return {
+      ...(candle as any),
+      change_percent: changePercent
+    };
+  });
 
   // Fetch 60m Candles (Latest 30)
   const hourlyCandles = await sql`

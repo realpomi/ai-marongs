@@ -69,6 +69,7 @@
             <tr>
               <th class="px-4 py-2">Date</th>
               <th class="px-4 py-2 text-right">Close</th>
+              <th class="px-4 py-2 text-right">Change</th>
               <th class="px-4 py-2 text-right">Volume</th>
             </tr>
           </thead>
@@ -77,11 +78,14 @@
               <tr class="hover:bg-gray-50">
                 <td class="px-4 py-2 whitespace-nowrap">{new Date(candle.candle_time).toLocaleDateString()}</td>
                 <td class="px-4 py-2 text-right">${Number(candle.close_price).toFixed(2)}</td>
+                <td class="px-4 py-2 text-right font-medium {(candle.change_percent ?? 0) > 0 ? 'text-green-600' : (candle.change_percent ?? 0) < 0 ? 'text-red-600' : 'text-gray-500'}">
+                  {candle.change_percent !== null ? ((candle.change_percent > 0 ? '+' : '') + Number(candle.change_percent).toFixed(2) + '%') : '-'}
+                </td>
                 <td class="px-4 py-2 text-right">{Number(candle.volume).toLocaleString()}</td>
               </tr>
             {:else}
               <tr>
-                <td colspan="3" class="px-4 py-4 text-center text-gray-400">No daily data available for {data.currentSource.toUpperCase()}.</td>
+                <td colspan="4" class="px-4 py-4 text-center text-gray-400">No daily data available for {data.currentSource.toUpperCase()}.</td>
               </tr>
             {/each}
           </tbody>
