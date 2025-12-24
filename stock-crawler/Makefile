@@ -1,13 +1,14 @@
-.PHONY: help add-ticker update-ticker deactivate-ticker list-tickers collect-60m collect-daily yf-collect-60m yf-collect-daily yf-collect tiingo-collect-60m tiingo-collect-daily tiingo-collect
+.PHONY: help add-ticker update-ticker deactivate-ticker list-tickers update collect-60m collect-daily yf-collect-60m yf-collect-daily yf-collect tiingo-collect-60m tiingo-collect-daily tiingo-collect
 
 help:
 	@echo "사용 가능한 명령어:"
 	@echo ""
 	@echo "=== 티커 관리 ==="
-	@echo "  make add-ticker SYMBOL=AAPL EXCHANGE=NAS NAME='Apple Inc.'  - 티커 등록"
+	@echo "  make add-ticker SYMBOL=AAPL EXCHANGE=NAS NAME='Apple Inc.'  - 티커 등록 (1년치 일봉 자동 수집)"
 	@echo "  make update-ticker SYMBOL=AAPL EXCHANGE=NYS NAME='Apple'    - 티커 수정"
 	@echo "  make deactivate-ticker SYMBOL=AAPL                          - 티커 비활성화"
 	@echo "  make list-tickers                                           - 활성 티커 조회"
+	@echo "  make update SYMBOL=AAPL                                     - 1년치 일봉 업데이트"
 	@echo ""
 	@echo "=== KIS API (한국투자증권) ==="
 	@echo "  make collect-60m                                            - 60분봉 수집"
@@ -55,6 +56,13 @@ endif
 # 활성 티커 조회
 list-tickers:
 	@python scripts/cli.py list-tickers
+
+# 1년치 일봉 업데이트
+update:
+ifndef SYMBOL
+	$(error SYMBOL is required. Usage: make update SYMBOL=AAPL)
+endif
+	@python scripts/cli.py update $(SYMBOL)
 
 # 60분봉 수집
 collect-60m:

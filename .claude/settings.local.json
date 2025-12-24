@@ -5,7 +5,9 @@
       "Bash(tree:*)",
       "Bash(find:*)",
       "Bash(python:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(TZ='America/New_York' date:*)",
+      "Bash(python3:*)"
     ]
   }
 }

@@ -27,13 +27,35 @@ def setup():
 
 
 def cmd_add_ticker(args):
-    """티커를 등록합니다."""
+    """티커를 등록하고 1년치 일봉을 수집합니다."""
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
     setup()
-    from common import add_ticker, get_ticker
+    from common import add_ticker, get_ticker, KisApi, save_us_stock_candles, update_last_collected
 
+    # 1. 티커 등록
     ticker_id = add_ticker(args.symbol, args.exchange, args.name)
     ticker = get_ticker(args.symbol)
     print(f"티커 등록 완료: {ticker.symbol} ({ticker.exchange}) - ID: {ticker.id}")
+
+    # 2. 1년치 일봉 수집
+    print(f"\n{ticker.symbol} 1년치 일봉 수집 시작...")
+    kis_api = KisApi.from_env()
+    candles = kis_api.fetch_us_stock_candles_daily_year(
+        symbol=ticker.symbol,
+        exchange=ticker.exchange,
+        max_days=365,
+    )
+
+    if candles:
+        saved_count = save_us_stock_candles(
+            symbol=ticker.symbol,
+            interval="daily",
+            candles=candles,
+        )
+        update_last_collected(ticker.id)
+        print(f"일봉 수집 완료: {saved_count}건 저장")
+    else:
+        print("일봉 데이터가 없습니다.")
 
 
 def cmd_update_ticker(args):
@@ -57,6 +79,37 @@ def cmd_update_ticker(args):
         print(f"티커 수정 완료: {ticker.symbol} ({ticker.exchange}) - {name}")
     else:
         print(f"티커 수정 실패: {args.symbol}")
+
+
+def cmd_update_daily(args):
+    """티커의 1년치 일봉을 업데이트합니다."""
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+    setup()
+    from common import get_ticker, KisApi, save_us_stock_candles, update_last_collected
+
+    ticker = get_ticker(args.symbol)
+    if not ticker:
+        print(f"티커를 찾을 수 없습니다: {args.symbol}")
+        sys.exit(1)
+
+    print(f"{ticker.symbol} ({ticker.exchange}) 1년치 일봉 업데이트 시작...")
+    kis_api = KisApi.from_env()
+    candles = kis_api.fetch_us_stock_candles_daily_year(
+        symbol=ticker.symbol,
+        exchange=ticker.exchange,
+        max_days=365,
+    )
+
+    if candles:
+        saved_count = save_us_stock_candles(
+            symbol=ticker.symbol,
+            interval="daily",
+            candles=candles,
+        )
+        update_last_collected(ticker.id)
+        print(f"일봉 업데이트 완료: {saved_count}건 저장")
+    else:
+        print("일봉 데이터가 없습니다.")
 
 
 def cmd_deactivate_ticker(args):
@@ -263,6 +316,11 @@ def main():
     p_update.add_argument("--exchange", "-e", default=None, help="거래소 코드")
     p_update.add_argument("--name", "-n", default=None, help="종목명")
     p_update.set_defaults(func=cmd_update_ticker)
+
+    # update (1년치 일봉 업데이트)
+    p_update_daily = subparsers.add_parser("update", help="1년치 일봉 업데이트")
+    p_update_daily.add_argument("symbol", help="종목 코드 (예: AAPL)")
+    p_update_daily.set_defaults(func=cmd_update_daily)
 
     # deactivate-ticker
     p_deactivate = subparsers.add_parser("deactivate-ticker", help="티커 비활성화")

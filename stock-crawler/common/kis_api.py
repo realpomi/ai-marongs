@@ -225,6 +225,72 @@ class KisApi:
         logger.info("=== %s 일봉 데이터 (%d건) ===", symbol, len(output2))
         return output2[:count]
 
+    def fetch_us_stock_candles_daily_year(
+        self, symbol: str, exchange: str = "NAS", max_days: int = 365
+    ) -> List[dict]:
+        """미국 주식 1년치 일봉 데이터를 조회합니다 (페이징 처리).
+
+        Args:
+            symbol: 종목 코드 (예: AAPL, TSLA)
+            exchange: 거래소 코드 (NAS: 나스닥, NYS: 뉴욕, AMS: 아멕스)
+            max_days: 최대 조회 일수 (기본: 365)
+
+        Returns:
+            캔들 데이터 리스트
+        """
+        import time
+
+        all_candles = []
+        bymd = ""  # 연속 조회용 날짜 (YYYYMMDD)
+        max_iterations = 10  # 무한 루프 방지 (100건 * 10 = 최대 1000건)
+
+        logger.info("[미국주식] %s 1년치 일봉 조회 시작...", symbol)
+
+        for i in range(max_iterations):
+            url = f"{self.base_url}/uapi/overseas-price/v1/quotations/dailyprice"
+            headers = self._get_headers("HHDFS76240000")
+            params = {
+                "AUTH": "",
+                "EXCD": exchange,
+                "SYMB": symbol.upper(),
+                "GUBN": "0",  # 0: 일봉
+                "BYMD": bymd,
+                "MODP": "1",
+            }
+
+            response = requests.get(url, headers=headers, params=params, timeout=10)
+
+            if not response.ok:
+                logger.error("API 호출 실패 - status=%s, body=%s", response.status_code, response.text)
+                break
+
+            payload = response.json()
+            output2 = payload.get("output2") or []
+
+            if not output2:
+                logger.info("더 이상 데이터가 없습니다.")
+                break
+
+            all_candles.extend(output2)
+            logger.info("  %d차 조회: %d건 (누적: %d건)", i + 1, len(output2), len(all_candles))
+
+            # 1년치 이상 가져왔으면 종료
+            if len(all_candles) >= max_days:
+                all_candles = all_candles[:max_days]
+                break
+
+            # 다음 페이지를 위한 날짜 설정 (마지막 데이터의 날짜)
+            last_date = output2[-1].get("xymd")
+            if not last_date or last_date == bymd:
+                break
+            bymd = last_date
+
+            # API 호출 간 대기
+            time.sleep(0.5)
+
+        logger.info("=== %s 1년치 일봉 조회 완료 (%d건) ===", symbol, len(all_candles))
+        return all_candles
+
     def fetch_us_stock_price(self, symbol: str, exchange: str = "NAS") -> Optional[dict]:
         """미국 주식 현재가를 조회합니다.
 
