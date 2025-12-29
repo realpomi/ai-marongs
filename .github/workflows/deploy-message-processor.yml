@@ -8,11 +8,21 @@ on:
       - '.github/workflows/deploy-message-processor.yml'
   workflow_dispatch:
 
+env:
+  DISCORD_WEBHOOK_URL: https://discord.com/api/webhooks/1455121065524330675/C-MYiWr8WAOymA1dCbstYnnd0N5kO8YY8hTDzwSWYsOTg5OfSN_JWl0cRsfByBlu0Hqs
+  SERVICE_NAME: Message Processor
+
 jobs:
   build-and-deploy:
     runs-on: self-hosted
 
     steps:
+      - name: Notify build start
+        run: |
+          curl -H "Content-Type: application/json" \
+            -d "{\"embeds\": [{\"title\": \"🚀 빌드 시작\", \"description\": \"**${{ env.SERVICE_NAME }}** 배포가 시작되었습니다.\", \"color\": 3447003, \"fields\": [{\"name\": \"Branch\", \"value\": \"\`${{ github.ref_name }}\`\", \"inline\": true}, {\"name\": \"Commit\", \"value\": \"\`${{ github.sha }}\`\", \"inline\": true}], \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}]}" \
+            ${{ env.DISCORD_WEBHOOK_URL }}
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -40,3 +50,17 @@ jobs:
           sleep 5
           docker ps | grep message-processor
           docker logs message-processor --tail 20
+
+      - name: Notify build success
+        if: success()
+        run: |
+          curl -H "Content-Type: application/json" \
+            -d "{\"embeds\": [{\"title\": \"✅ 빌드 완료\", \"description\": \"**${{ env.SERVICE_NAME }}** 배포가 성공적으로 완료되었습니다.\", \"color\": 5763719, \"fields\": [{\"name\": \"Branch\", \"value\": \"\`${{ github.ref_name }}\`\", \"inline\": true}, {\"name\": \"Commit\", \"value\": \"\`${{ github.sha }}\`\", \"inline\": true}], \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}]}" \
+            ${{ env.DISCORD_WEBHOOK_URL }}
+
+      - name: Notify build failure
+        if: failure()
+        run: |
+          curl -H "Content-Type: application/json" \
+            -d "{\"embeds\": [{\"title\": \"❌ 빌드 실패\", \"description\": \"**${{ env.SERVICE_NAME }}** 배포 중 오류가 발생했습니다.\", \"color\": 15548997, \"fields\": [{\"name\": \"Branch\", \"value\": \"\`${{ github.ref_name }}\`\", \"inline\": true}, {\"name\": \"Commit\", \"value\": \"\`${{ github.sha }}\`\", \"inline\": true}, {\"name\": \"Workflow\", \"value\": \"[로그 확인](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\", \"inline\": false}], \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}]}" \
+            ${{ env.DISCORD_WEBHOOK_URL }}
