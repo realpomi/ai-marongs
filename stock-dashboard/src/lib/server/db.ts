@@ -1,12 +1,12 @@
 import postgres from 'postgres';
-import { DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 
 const connectionOptions = {
-  host: DB_HOST || 'localhost',
-  port: Number(DB_PORT || 5432),
-  database: DB_NAME || 'stocks',
-  user: DB_USER || 'stocks', // 'username' 대신 'user' 사용
-  password: DB_PASSWORD || 'password',
+  host: env.DB_HOST || 'localhost',
+  port: Number(env.DB_PORT || 5432),
+  database: env.DB_NAME || 'stocks',
+  user: env.DB_USER || 'stocks',
+  password: env.DB_PASSWORD || 'password',
 };
 
 console.log('Attempting DB connection with options:', {
