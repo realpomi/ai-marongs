@@ -2,6 +2,8 @@ import cron, { type ScheduledTask } from 'node-cron';
 import sql from '$lib/server/db';
 import { kisClient } from '$lib/server/kis';
 import { saveUsStockCandles, updateTickerLastCollected } from '$lib/server/repositories/candle.repository';
+import { analyzeSignal } from '$lib/server/analysis';
+import { createTickerSignalsTable, saveTickerSignal } from '$lib/server/repositories/signal.repository';
 import type { Exchange } from '$lib/server/kis/types';
 
 const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1455121065524330675/C-MYiWr8WAOymA1dCbstYnnd0N5kO8YY8hTDzwSWYsOTg5OfSN_JWl0cRsfByBlu0Hqs';
@@ -40,6 +42,7 @@ interface SchedulerStatus {
 class DailyCollectScheduler {
   private task: ScheduledTask | null = null;
   private isCollecting = false;
+  private isAnalyzing = false; // 분석 중복 실행 방지
   private status: SchedulerStatus = {
     isRunning: false,
     lastRun: null,
@@ -178,6 +181,9 @@ class DailyCollectScheduler {
       console.log(message);
       sendDiscordNotification(`✅ ${message}`);
 
+      // 수집 완료 후 시그널 분석 실행
+      await this.analyzeAllTickers(tickers.map(t => t.symbol));
+
       return {
         success: errors === 0,
         totalTickers: tickers.length,
@@ -222,10 +228,144 @@ class DailyCollectScheduler {
   }
 
   /**
-   * 수동 실행 (API에서 호출용)
+   * 수동 실행 (API에서 호출용) - 수집 + 분석
    */
   async runNow() {
     return this.collectAllTickers();
+  }
+
+  /**
+   * 시그널 분석만 수동 실행 (수집 없이)
+   */
+  async runAnalyzeOnly(): Promise<{
+    success: boolean;
+    analyzed: number;
+    failed: number;
+    strongBuySignals: string[];
+    skipped?: boolean;
+  }> {
+    // 이미 분석 중이면 스킵
+    if (this.isAnalyzing) {
+      console.log('[Scheduler] 이미 분석 중입니다. 스킵합니다.');
+      return {
+        success: false,
+        analyzed: 0,
+        failed: 0,
+        strongBuySignals: [],
+        skipped: true
+      };
+    }
+
+    // 활성 티커 조회
+    const tickers = await sql<{ symbol: string }[]>`
+      SELECT symbol FROM managed_tickers
+      WHERE is_active = true
+      ORDER BY symbol
+    `;
+
+    const symbols = tickers.map(t => t.symbol);
+
+    // 분석 실행
+    const result = await this.analyzeAllTickersWithResult(symbols);
+    return result;
+  }
+
+  /**
+   * 전체 티커의 시그널 분석 및 저장 (결과 반환 버전)
+   */
+  private async analyzeAllTickersWithResult(symbols: string[]): Promise<{
+    success: boolean;
+    analyzed: number;
+    failed: number;
+    strongBuySignals: string[];
+  }> {
+    this.isAnalyzing = true;
+
+    try {
+      console.log('[Scheduler] 시그널 분석 시작...');
+      sendDiscordNotification('📊 [Scheduler] 시그널 분석 시작...');
+
+      // 테이블 존재 확인/생성
+      await createTickerSignalsTable();
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      let analyzed = 0;
+      let failed = 0;
+      const strongBuySignals: string[] = [];
+
+      for (const symbol of symbols) {
+        try {
+          const candles = await sql<{
+            candle_time: Date;
+            open_price: string;
+            high_price: string;
+            low_price: string;
+            close_price: string;
+            volume: string;
+          }[]>`
+            SELECT candle_time, open_price, high_price, low_price, close_price, volume
+            FROM us_stock_candles
+            WHERE symbol = ${symbol}
+              AND interval = 'daily'
+              AND source = 'kis'
+            ORDER BY candle_time DESC
+            LIMIT 365
+          `;
+
+          if (candles.length < 60) {
+            console.log(`[Scheduler] ${symbol}: 분석 데이터 부족 (${candles.length}일)`);
+            continue;
+          }
+
+          const analysis = analyzeSignal(candles);
+          if (!analysis) {
+            console.log(`[Scheduler] ${symbol}: 분석 실패`);
+            failed++;
+            continue;
+          }
+
+          await saveTickerSignal(symbol, today, analysis);
+          analyzed++;
+
+          if (analysis.signalLevel >= 4) {
+            strongBuySignals.push(`${symbol}(Lv${analysis.signalLevel})`);
+          }
+
+          console.log(`[Scheduler] ${symbol}: 시그널 Lv${analysis.signalLevel} (${analysis.signalKeyword})`);
+        } catch (e) {
+          const errorMsg = e instanceof Error ? e.message : String(e);
+          console.error(`[Scheduler] ${symbol} 분석 오류:`, errorMsg);
+          failed++;
+        }
+      }
+
+      const summaryMsg = `[Scheduler] 시그널 분석 완료: ${analyzed}개 분석, ${failed}개 실패`;
+      console.log(summaryMsg);
+
+      let discordMsg = `📊 ${summaryMsg}`;
+      if (strongBuySignals.length > 0) {
+        discordMsg += `\n🔥 매수 시그널: ${strongBuySignals.join(', ')}`;
+      }
+      sendDiscordNotification(discordMsg);
+
+      return {
+        success: failed === 0,
+        analyzed,
+        failed,
+        strongBuySignals
+      };
+    } finally {
+      this.isAnalyzing = false;
+    }
+  }
+
+  /**
+   * 전체 티커의 시그널 분석 및 저장 (기존 호환용)
+   */
+  async analyzeAllTickers(symbols: string[]): Promise<void> {
+    await this.analyzeAllTickersWithResult(symbols);
   }
 }
 

@@ -17,6 +17,7 @@ Python 기반의 Discord Bot과 메시지 처리 시스템으로, NATS 메시지
 | 개발 가이드 | [docs/agent/development.md](docs/agent/development.md) | 개발 주의사항, 코딩 컨벤션, 커밋 규칙, 테스트 환경 |
 | 배포 가이드 | [docs/agent/deployment.md](docs/agent/deployment.md) | CI/CD, 환경 변수, 수동 배포 방법 |
 | Stock Dashboard | [docs/agent/stock-dashboard.md](docs/agent/stock-dashboard.md) | SvelteKit 5 기반 대시보드 UI 작업 가이드 |
+| Signal Analysis | [stock-dashboard/docs/SIGNAL_ANALYSIS.md](stock-dashboard/docs/SIGNAL_ANALYSIS.md) | 시그널 분석 기능, API, DB 스키마 |
 
 ## 빠른 참고
 
