@@ -2,7 +2,7 @@ import { readFile, writeFile } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
 import type { TokenData } from './types';
-import { KIS_BASE_URL, KIS_APP_KEY, KIS_APP_SECRET } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 
 const TOKEN_FILE = '.access_token.json';
 
@@ -40,13 +40,13 @@ class KisTokenManager {
   async refreshToken(): Promise<string> {
     console.log('[KIS] 토큰 발급 요청...');
 
-    const response = await fetch(`${KIS_BASE_URL}/oauth2/tokenP`, {
+    const response = await fetch(`${env.KIS_BASE_URL}/oauth2/tokenP`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         grant_type: 'client_credentials',
-        appkey: KIS_APP_KEY,
-        appsecret: KIS_APP_SECRET
+        appkey: env.KIS_APP_KEY,
+        appsecret: env.KIS_APP_SECRET
       })
     });
 

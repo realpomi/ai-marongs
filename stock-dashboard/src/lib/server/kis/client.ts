@@ -1,4 +1,4 @@
-import { KIS_BASE_URL, KIS_APP_KEY, KIS_APP_SECRET } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import { tokenManager } from './token-manager';
 import { rateLimiter } from './rate-limiter';
 import type { KisApiResponse, UsStockCandleRaw, UsStockPriceRaw, KrStockCandleRaw, Exchange } from './types';
@@ -9,8 +9,8 @@ class KisClient {
     return {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
-      appkey: KIS_APP_KEY,
-      appsecret: KIS_APP_SECRET,
+      appkey: env.KIS_APP_KEY!,
+      appsecret: env.KIS_APP_SECRET!,
       tr_id: trId,
       custtype: 'P'
     };
@@ -20,7 +20,7 @@ class KisClient {
     await rateLimiter.waitIfNeeded();
 
     const queryString = new URLSearchParams(params).toString();
-    const fullUrl = `${KIS_BASE_URL}${url}?${queryString}`;
+    const fullUrl = `${env.KIS_BASE_URL}${url}?${queryString}`;
 
     const response = await fetch(fullUrl, {
       method: 'GET',
