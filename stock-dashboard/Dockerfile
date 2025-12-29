@@ -7,7 +7,7 @@ WORKDIR /app
 COPY package.json bun.lock* ./
 
 # Install dependencies
-RUN bun install --frozen-lockfile
+RUN bun install
 
 # Copy source code
 COPY . .
@@ -31,7 +31,7 @@ COPY --from=builder /app/build ./build
 COPY --from=builder /app/package.json ./
 
 # Install production dependencies only
-RUN bun install --production --frozen-lockfile
+RUN bun install --production
 
 # Change ownership
 RUN chown -R sveltekit:nodejs /app
