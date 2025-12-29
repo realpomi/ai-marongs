@@ -168,6 +168,27 @@ curl -X POST "http://localhost:5173/api/kis/collect" \
   -d '{"symbols":["AAPL","NVDA"],"interval":"daily"}'
 ```
 
+### 스케줄러 (자동 일봉 수집)
+
+| 메서드 | 엔드포인트 | 설명 |
+|--------|------------|------|
+| GET | `/api/scheduler` | 스케줄러 상태 조회 |
+| POST | `/api/scheduler` | 수동 실행 (즉시 수집) |
+
+```bash
+# 스케줄러 상태 확인
+curl http://localhost:5173/api/scheduler
+
+# 수동으로 즉시 실행
+curl -X POST http://localhost:5173/api/scheduler
+```
+
+**스케줄러 설정:**
+- 실행 시간: 매일 06:00 KST (21:00 UTC)
+- 수집 대상: `managed_tickers` 테이블의 `is_active = true` 티커
+- Rate limit: 500ms 간격으로 순차 수집 (KIS API 분당 호출 한도 준수)
+- 자동 시작: 서버 시작 시 `hooks.server.ts`에서 자동 초기화
+
 ### 응답 예시
 
 ```json
@@ -182,6 +203,12 @@ curl -X POST "http://localhost:5173/api/kis/collect" \
 
 // POST /api/kis/collect
 {"success": true, "totalTickers": 5, "totalSaved": 300, "errors": 0, "results": [...]}
+
+// GET /api/scheduler
+{"isRunning": true, "lastRun": "2024-12-27T21:00:00.000Z", "nextRun": "2024-12-28T21:00:00.000Z", "isCollecting": false, "lastResult": {"success": true, "totalTickers": 5, "totalSaved": 150, "errors": 0, "duration": 3200}}
+
+// POST /api/scheduler
+{"success": true, "totalTickers": 5, "totalSaved": 150, "errors": 0, "results": [...]}
 ```
 
 ---

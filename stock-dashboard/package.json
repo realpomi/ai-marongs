@@ -22,6 +22,7 @@
 		"@tailwindcss/typography": "^0.5.19",
 		"@tailwindcss/vite": "^4.1.17",
 		"@types/node": "^24",
+		"@types/node-cron": "^3.0.11",
 		"eslint": "^9.39.1",
 		"eslint-config-prettier": "^10.1.8",
 		"eslint-plugin-svelte": "^3.13.1",
@@ -39,6 +40,7 @@
 	"dependencies": {
 		"chart.js": "^4.5.1",
 		"lightweight-charts": "^5.1.0",
+		"node-cron": "^4.2.1",
 		"postgres": "^3.4.7",
 		"yahoo-finance2": "^3.10.2"
 	}
