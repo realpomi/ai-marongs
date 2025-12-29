@@ -12,8 +12,8 @@ RUN bun install
 # Copy source code
 COPY . .
 
-# Build the application
-RUN bun run build
+# Sync SvelteKit and build
+RUN bun run prepare && bun run build
 
 # Production stage
 FROM oven/bun:1-alpine AS runner
