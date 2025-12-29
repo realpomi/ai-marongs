@@ -1,17 +1,20 @@
-import { readFile, writeFile } from 'fs/promises';
+import { readFile, writeFile, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
 import type { TokenData } from './types';
 import { env } from '$env/dynamic/private';
 
+const TOKEN_DIR = 'data';
 const TOKEN_FILE = '.access_token.json';
 
 class KisTokenManager {
   private tokenPath: string;
+  private tokenDir: string;
   private cachedToken: TokenData | null = null;
 
   constructor() {
-    this.tokenPath = path.join(process.cwd(), TOKEN_FILE);
+    this.tokenDir = path.join(process.cwd(), TOKEN_DIR);
+    this.tokenPath = path.join(this.tokenDir, TOKEN_FILE);
   }
 
   /**
@@ -115,6 +118,10 @@ class KisTokenManager {
   }
 
   private async saveToFile(token: TokenData): Promise<void> {
+    // 디렉토리가 없으면 생성
+    if (!existsSync(this.tokenDir)) {
+      await mkdir(this.tokenDir, { recursive: true });
+    }
     await writeFile(this.tokenPath, JSON.stringify(token, null, 2));
   }
 }

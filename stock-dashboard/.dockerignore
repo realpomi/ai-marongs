@@ -4,6 +4,8 @@ build
 .env
 .env.*
 !.env.example
+.access_token.json
+data
 *.log
 .DS_Store
 .git
