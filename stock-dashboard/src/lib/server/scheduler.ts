@@ -4,6 +4,20 @@ import { kisClient } from '$lib/server/kis';
 import { saveUsStockCandles, updateTickerLastCollected } from '$lib/server/repositories/candle.repository';
 import type { Exchange } from '$lib/server/kis/types';
 
+const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1455121065524330675/C-MYiWr8WAOymA1dCbstYnnd0N5kO8YY8hTDzwSWYsOTg5OfSN_JWl0cRsfByBlu0Hqs';
+
+async function sendDiscordNotification(message: string) {
+  try {
+    await fetch(DISCORD_WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: message }),
+    });
+  } catch (error) {
+    console.error('[Scheduler] Failed to send Discord notification:', error);
+  }
+}
+
 interface CollectResult {
   symbol: string;
   saved: number;
@@ -109,6 +123,7 @@ class DailyCollectScheduler {
     this.isCollecting = true;
     const startTime = Date.now();
     console.log('[Scheduler] 일봉 데이터 수집 시작...');
+    sendDiscordNotification('🚀 [Scheduler] 일봉 데이터 수집 시작...');
 
     const results: CollectResult[] = [];
 
@@ -159,7 +174,9 @@ class DailyCollectScheduler {
       };
       this.updateNextRun();
 
-      console.log(`[Scheduler] 수집 완료: ${tickers.length}개 티커, ${totalSaved}건 저장, ${errors}개 오류, ${duration}ms 소요`);
+      const message = `[Scheduler] 수집 완료: ${tickers.length}개 티커, ${totalSaved}건 저장, ${errors}개 오류, ${duration}ms 소요`;
+      console.log(message);
+      sendDiscordNotification(`✅ ${message}`);
 
       return {
         success: errors === 0,
@@ -171,6 +188,7 @@ class DailyCollectScheduler {
     } catch (e) {
       const errorMsg = e instanceof Error ? e.message : String(e);
       console.error('[Scheduler] 수집 중 오류 발생:', errorMsg);
+      sendDiscordNotification(`❌ [Scheduler] 수집 중 오류 발생: ${errorMsg}`);
 
       this.status.lastRun = new Date();
       this.status.lastResult = {
