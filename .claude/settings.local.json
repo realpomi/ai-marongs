@@ -7,7 +7,13 @@
       "Bash(python:*)",
       "Bash(curl:*)",
       "Bash(TZ='America/New_York' date:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(cat:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm run check:*)",
+      "Bash(lsof:*)",
+      "Bash(wc:*)",
+      "Bash(git -C /Users/realpomi/Documents/develop/private/ai-marongs log --oneline -20)"
     ]
   }
 }

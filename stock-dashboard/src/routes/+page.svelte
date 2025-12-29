@@ -10,7 +10,7 @@
 		</p>
 		<div class="text-sm text-gray-400">
 			<p>Data Source: PostgreSQL</p>
-			<p>Candles: Daily & 60-Min</p>
+			<p>Candles: Daily</p>
 		</div>
 	</div>
 </div>

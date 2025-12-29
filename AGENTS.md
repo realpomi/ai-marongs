@@ -1,225 +1,42 @@
 # AI Agent 개발 가이드
 
-이 문서는 AI Agent가 ai-marongs 프로젝트를 개발할 때 참고해야 할 핵심 정보를 정리한 것입니다.
+이 문서는 AI Agent가 ai-marongs 프로젝트를 개발할 때 참고해야 할 핵심 정보의 인덱스입니다.
 
 ## 프로젝트 개요
 
 Python 기반의 Discord Bot과 메시지 처리 시스템으로, NATS 메시지 브로커를 통해 마이크로서비스 아키텍처를 구현합니다.
 
-## 아키텍처
+## 상세 문서
 
-```
-Discord User → Discord Bot (Interface) → NATS → Message Processor → NATS → Discord Bot → Discord User
-```
+각 기능별 상세 내용은 아래 문서를 참고하세요.
 
-### 메시지 흐름 상세
+| 문서 | 경로 | 내용 |
+|------|------|------|
+| 아키텍처 | [docs/agent/architecture.md](docs/agent/architecture.md) | 시스템 구조, 메시지 흐름, 주요 코드 위치, 파일 구조 |
+| NATS 메시지 | [docs/agent/nats-messages.md](docs/agent/nats-messages.md) | NATS 토픽, 메시지 포맷 규격 |
+| 개발 가이드 | [docs/agent/development.md](docs/agent/development.md) | 개발 주의사항, 코딩 컨벤션, 커밋 규칙, 테스트 환경 |
+| 배포 가이드 | [docs/agent/deployment.md](docs/agent/deployment.md) | CI/CD, 환경 변수, 수동 배포 방법 |
+| Stock Dashboard | [docs/agent/stock-dashboard.md](docs/agent/stock-dashboard.md) | SvelteKit 5 기반 대시보드 UI 작업 가이드 |
 
-```
-Discord User
-    │
-    ▼
-┌─────────────────────────────────────┐
-│  discord-bot/bot.py                 │
-│  DiscordNATSBridge                  │
-│                                     │
-│  on_message() (L163)                │
-│    └─▶ publish_message() (L41)      │
-│           │                         │
-│           │ NATS publish            │
-│           │ "discord.messages"      │
-│           ▼                         │
-│  handle_response() (L127)           │◀─────┐
-│    └─▶ channel.send() (L140)        │      │
-└─────────────────────────────────────┘      │
-                                             │
-              NATS Message Broker            │
-                                             │
-┌─────────────────────────────────────┐      │
-│  message-processor/processor.py     │      │
-│  MessageProcessor                   │      │
-│                                     │
-│  handle_discord_message() (L85)     │      │
-│    └─▶ process_message() (L30)      │      │
-│           │                         │      │
-│           │ NATS publish            │      │
-│           │ "discord.responses"     │──────┘
-│           ▼                         │
-└─────────────────────────────────────┘
-```
+## 빠른 참고
 
-### 주요 코드 위치
-
-| 기능 | 파일 | 라인 | 설명 |
-|------|------|------|------|
-| 메시지 수신 | `discord-bot/bot.py` | L163 | `on_message()` - Discord 메시지 이벤트 |
-| 메시지 발행 | `discord-bot/bot.py` | L41 | `publish_message()` - NATS로 메시지 전송 |
-| 응답 구독 | `discord-bot/bot.py` | L35 | `discord.responses` 토픽 구독 |
-| 응답 처리 | `discord-bot/bot.py` | L127 | `handle_response()` - Discord로 응답 전송 |
-| 메시지 구독 | `message-processor/processor.py` | L120 | `discord.messages` 토픽 구독 |
-| 메시지 처리 | `message-processor/processor.py` | L85 | `handle_discord_message()` - 수신 메시지 파싱 |
-| 비즈니스 로직 | `message-processor/processor.py` | L30 | `process_message()` - 실제 처리 로직 |
-| 응답 발행 | `message-processor/processor.py` | L104 | NATS로 응답 전송 |
-
-### NATS 토픽 상세
-
-| 토픽 | 방향 | 발행 위치 | 구독 위치 |
-|------|------|-----------|-----------|
-| `discord.messages` | Bot → Processor | `bot.py:119` | `processor.py:120` |
-| `discord.responses` | Processor → Bot | `processor.py:104` | `bot.py:35` |
-
-### 두 개의 독립적인 서비스
+### 서비스 구성
 
 | 서비스 | 디렉토리 | 역할 |
 |--------|----------|------|
-| Discord Bot | `discord-bot/` | Discord API 인터페이스, 메시지 발행/구독 |
+| Discord Bot | `discord-bot/` | Discord API 인터페이스 |
 | Message Processor | `message-processor/` | 비즈니스 로직 처리 |
+| Stock Dashboard | `stock-dashboard/` | 주식 대시보드 웹 UI |
 
-## 핵심 파일 구조
+### 주요 기술 스택
 
-```
-ai-marongs/
-├── discord-bot/
-│   ├── bot.py              # Discord 봇 메인 (DiscordNATSBridge 클래스)
-│   ├── Dockerfile          # Python 3.11-slim 기반
-│   ├── requirements.txt    # discord.py, nats-py, python-dotenv
-│   └── .env.example
-├── message-processor/
-│   ├── processor.py        # MessageProcessor 클래스 (비즈니스 로직)
-│   ├── requirements.txt    # nats-py, python-dotenv
-│   └── .env.example
-├── docker-compose.yml      # Discord Bot 컨테이너 설정
-└── .github/workflows/
-    └── deploy-discord-bot.yml  # CI/CD (self-hosted runner)
-```
+- **Discord Bot**: Python 3.11, discord.py, nats-py
+- **Message Processor**: Python 3.11, nats-py
+- **Stock Dashboard**: SvelteKit 5, TailwindCSS
+- **인프라**: Docker, NATS, GitHub Actions
 
-## NATS 메시지 규격
+### 커밋 메시지 타입
 
-### 토픽 (Topics)
-
-| 토픽 | 방향 | 용도 |
-|------|------|------|
-| `discord.messages` | Bot → Processor | 사용자 메시지 전달 |
-| `discord.responses` | Processor → Bot | 처리 결과 응답 |
-
-### 메시지 포맷
-
-**discord.messages:**
-```json
-{
-  "channel_id": 123456789,
-  "author_id": 987654321,
-  "content": "사용자 메시지",
-  "message_id": 111222333
-}
-```
-
-**discord.responses:**
-```json
-{
-  "channel_id": 123456789,
-  "response": "처리된 응답",
-  "original_message_id": 111222333
-}
-```
-
-## 환경 변수
-
-### Discord Bot
-```env
-DISCORD_TOKEN=your_discord_bot_token_here
-NATS_URL=nats://nats:4222
-```
-
-### Message Processor
-```env
-NATS_URL=nats://nats:4222
-```
-
-## 네트워크 설정
-
-- **Docker 네트워크**: `home-network` (외부 네트워크, 미리 생성 필요)
-- **NATS 서버**: `nats:4222` (home-network에서 실행 중인 외부 NATS 서버)
-
-## 개발 시 주의사항
-
-### 1. 메시지 처리 로직 수정
-비즈니스 로직 추가/수정 시 `message-processor/processor.py`의 `process_message` 메소드를 수정:
-
-```python
-async def process_message(self, message_data: Dict[str, Any]) -> str:
-    content = message_data.get('content', '')
-    # 여기에 로직 추가
-    return "응답"
-```
-
-### 2. Discord 명령어 추가
-`discord-bot/bot.py`에 명령어 추가:
-
-```python
-@bot.command(name='mycommand')
-async def my_command(ctx):
-    await ctx.send('응답')
-```
-
-### 3. 봇 트리거 조건
-`bot.py`의 `on_message` 이벤트에서:
-- `ping` 메시지: 즉시 `Pong!` 응답 (NATS 미사용)
-- 봇 멘션 또는 `!` 명령어: NATS로 메시지 발행
-
-### 4. Python 버전
-- 최소 요구 버전: Python 3.8
-- Docker 이미지: Python 3.11-slim
-
-## 의존성
-
-### Discord Bot
-- `discord.py>=2.3.2`
-- `nats-py>=2.6.0`
-- `python-dotenv>=1.0.0`
-
-### Message Processor
-- `nats-py>=2.6.0`
-- `python-dotenv>=1.0.0`
-
-## 배포 (CI/CD)
-
-### GitHub Actions 워크플로우
-- **트리거**: `main` 브랜치에 `discord-bot/**` 변경 시
-- **실행 환경**: self-hosted runner
-- **프로세스**:
-  1. 기존 컨테이너 중지/삭제
-  2. Docker 이미지 빌드
-  3. 새 컨테이너 실행
-  4. 배포 확인
-
-### 수동 배포
-```bash
-docker build -t discord-bot:latest ./discord-bot
-docker run -d \
-  --name discord-bot \
-  --network home-network \
-  -e DISCORD_TOKEN=your_token \
-  -e NATS_URL=nats://nats:4222 \
-  --restart unless-stopped \
-  discord-bot:latest
-```
-
-## 코딩 컨벤션
-
-- PEP 8 스타일 가이드
-- 함수/클래스에 docstring 추가
-- 타입 힌트 사용
-- 명확하고 설명적인 변수명
-
-## 커밋 메시지 규칙
-
-```
-<타입>: <간단한 설명>
-
-<상세 설명 (선택사항)>
-```
-
-**타입:**
 - `feat`: 새로운 기능
 - `fix`: 버그 수정
 - `docs`: 문서 변경
@@ -228,19 +45,251 @@ docker run -d \
 - `test`: 테스트 추가/수정
 - `chore`: 빌드 프로세스 또는 도구 변경
 
-## 테스트 환경 구축
+---
 
-1. NATS 서버가 `home-network`에서 실행 중인지 확인
-2. `.env.example`을 `.env`로 복사하고 설정
-3. 가상 환경 생성 및 의존성 설치
-4. 각 서비스 실행
+## 서브에이전트 정의
+
+Claude Code에서 Task 도구를 통해 호출할 수 있는 서브에이전트 정의입니다.
+
+### kis-api-client
+
+**용도**: KIS API 클라이언트 핵심 모듈 구현
+
+**작업 범위**:
+- `stock-dashboard/src/lib/server/kis/types.ts` - 타입 정의
+- `stock-dashboard/src/lib/server/kis/rate-limiter.ts` - API 호출 제한
+- `stock-dashboard/src/lib/server/kis/token-manager.ts` - OAuth2 토큰 관리
+- `stock-dashboard/src/lib/server/kis/client.ts` - KIS API 클라이언트
+- `stock-dashboard/src/lib/server/kis/index.ts` - exports
+
+**참조 문서**: [docs/KIS_API_MIGRATION.md](docs/KIS_API_MIGRATION.md) Phase 1
+
+**참조 코드**: [stock-crawler/common/kis_api.py](stock-crawler/common/kis_api.py) (포팅 대상)
+
+---
+
+### kis-repository
+
+**용도**: KIS 데이터 저장소 및 API 라우트 구현
+
+**작업 범위**:
+- `stock-dashboard/src/lib/server/repositories/candle.repository.ts` - 캔들 데이터 DB 저장/조회
+- `stock-dashboard/src/routes/api/kis/token/+server.ts` - 토큰 관리 API
+- `stock-dashboard/src/routes/api/kis/price/[symbol]/+server.ts` - 현재가 API
+- `stock-dashboard/src/routes/api/kis/candles/[symbol]/+server.ts` - 캔들 API
+- `stock-dashboard/src/routes/api/kis/collect/+server.ts` - 수집 API
+
+**참조 문서**: [docs/KIS_API_MIGRATION.md](docs/KIS_API_MIGRATION.md) Phase 2-3
+
+**참조 코드**: [stock-crawler/common/db.py](stock-crawler/common/db.py) (포팅 대상)
+
+---
+
+### kis-dashboard-integration
+
+**용도**: 대시보드 UI 연동 및 환경 설정
+
+**작업 범위**:
+- `stock-dashboard/.env` - KIS 환경변수 추가
+- `stock-dashboard/src/app.d.ts` - 환경변수 타입 선언
+- `stock-dashboard/src/routes/ticker/[symbol]/+page.svelte` - 새로고침 버튼 추가
+
+**참조 문서**: [docs/KIS_API_MIGRATION.md](docs/KIS_API_MIGRATION.md) Phase 4-6
+
+---
+
+## KIS API 엔드포인트
+
+`stock-dashboard`에서 제공하는 KIS API 엔드포인트입니다.
+
+### 토큰 관리
+
+| 메서드 | 엔드포인트 | 설명 |
+|--------|------------|------|
+| GET | `/api/kis/token` | 토큰 상태 조회 |
+| POST | `/api/kis/token` | 토큰 강제 갱신 |
 
 ```bash
-# Discord Bot
-cd discord-bot && python -m venv venv && source venv/bin/activate
-pip install -r requirements.txt && python bot.py
+# 토큰 상태 확인
+curl http://localhost:5173/api/kis/token
+# {"valid":true,"expiresAt":"2024-12-27 10:30:00","remainingMinutes":1420}
 
-# Message Processor (별도 터미널)
-cd message-processor && python -m venv venv && source venv/bin/activate
-pip install -r requirements.txt && python processor.py
+# 토큰 강제 갱신
+curl -X POST http://localhost:5173/api/kis/token
+```
+
+### 현재가 조회
+
+| 메서드 | 엔드포인트 | 쿼리 파라미터 |
+|--------|------------|---------------|
+| GET | `/api/kis/price/[symbol]` | `market` (us/kr), `exchange` (NAS/NYS/AMS) |
+
+```bash
+# 미국 주식 현재가
+curl "http://localhost:5173/api/kis/price/AAPL?market=us&exchange=NAS"
+
+# 국내 주식 현재가
+curl "http://localhost:5173/api/kis/price/005930?market=kr"
+```
+
+### 캔들 조회
+
+| 메서드 | 엔드포인트 | 쿼리 파라미터 |
+|--------|------------|---------------|
+| GET | `/api/kis/candles/[symbol]` | `market`, `exchange`, `interval` (60m/daily), `count`, `save` (true/false), `yearly` (true/false) |
+
+```bash
+# 60분봉 조회
+curl "http://localhost:5173/api/kis/candles/AAPL?interval=60m&count=30"
+
+# 일봉 조회 + DB 저장
+curl "http://localhost:5173/api/kis/candles/AAPL?interval=daily&count=30&save=true"
+
+# 1년치 일봉 조회
+curl "http://localhost:5173/api/kis/candles/AAPL?interval=daily&yearly=true&save=true"
+```
+
+### 데이터 수집
+
+| 메서드 | 엔드포인트 | 쿼리/바디 파라미터 |
+|--------|------------|-------------------|
+| POST | `/api/kis/collect` | `interval` (60m/daily/all), `symbols` (배열) |
+
+```bash
+# 전체 활성 티커 수집
+curl -X POST "http://localhost:5173/api/kis/collect?interval=all"
+
+# 60분봉만 수집
+curl -X POST "http://localhost:5173/api/kis/collect?interval=60m"
+
+# 특정 티커만 수집
+curl -X POST "http://localhost:5173/api/kis/collect" \
+  -H "Content-Type: application/json" \
+  -d '{"symbols":["AAPL","NVDA"],"interval":"daily"}'
+```
+
+### 응답 예시
+
+```json
+// GET /api/kis/token
+{"valid": true, "expiresAt": "2024-12-27 10:30:00", "remainingMinutes": 1420}
+
+// GET /api/kis/price/AAPL
+{"symbol": "AAPL", "market": "us", "price": {"last": "250.50", "diff": "+2.30", "rate": "0.93"}}
+
+// GET /api/kis/candles/AAPL?interval=daily&save=true
+{"symbol": "AAPL", "interval": "daily", "count": 30, "saved": 30, "candles": [...]}
+
+// POST /api/kis/collect
+{"success": true, "totalTickers": 5, "totalSaved": 300, "errors": 0, "results": [...]}
+```
+
+---
+
+## 데이터베이스 스키마
+
+PostgreSQL 기반의 데이터베이스 구조입니다.
+
+### 연결 설정
+
+```typescript
+// stock-dashboard/src/lib/server/db.ts
+{
+  host: DB_HOST || 'localhost',
+  port: DB_PORT || 5432,
+  database: DB_NAME || 'stocks',
+  user: DB_USER || 'stocks',
+  password: DB_PASSWORD
+}
+```
+
+### 테이블 정의
+
+#### `us_stock_candles` - 미국 주식 캔들 데이터
+
+| 컬럼 | 타입 | 제약조건 | 설명 |
+|------|------|----------|------|
+| `id` | SERIAL | PRIMARY KEY | 자동 증가 ID |
+| `symbol` | TEXT | NOT NULL | 종목 코드 (예: AAPL) |
+| `interval` | TEXT | NOT NULL | 주기 ('60m', 'daily') |
+| `candle_time` | TIMESTAMPTZ | NOT NULL | 캔들 시간 |
+| `open_price` | NUMERIC(18,4) | NOT NULL | 시가 |
+| `high_price` | NUMERIC(18,4) | NOT NULL | 고가 |
+| `low_price` | NUMERIC(18,4) | NOT NULL | 저가 |
+| `close_price` | NUMERIC(18,4) | NOT NULL | 종가 |
+| `volume` | BIGINT | NOT NULL | 거래량 |
+| `source` | TEXT | NOT NULL DEFAULT 'kis' | 데이터 소스 ('kis', 'yf') |
+| `created_at` | TIMESTAMPTZ | NOT NULL DEFAULT NOW() | 생성 시간 |
+
+**제약조건 & 인덱스:**
+- `CONSTRAINT uq_us_stock_candles UNIQUE(symbol, interval, candle_time, source)`
+- `INDEX idx_us_stock_candles_lookup ON us_stock_candles(symbol, interval, candle_time DESC)`
+- `INDEX idx_us_stock_candles_source ON us_stock_candles(source)`
+
+#### `managed_tickers` - 관리 대상 티커
+
+| 컬럼 | 타입 | 제약조건 | 설명 |
+|------|------|----------|------|
+| `id` | SERIAL | PRIMARY KEY | 자동 증가 ID |
+| `symbol` | VARCHAR(20) | NOT NULL, UNIQUE | 종목 코드 |
+| `name` | VARCHAR(100) | - | 종목명 |
+| `exchange` | VARCHAR(10) | NOT NULL DEFAULT 'NAS' | 거래소 (NAS/NYS/AMS) |
+| `is_active` | BOOLEAN | NOT NULL DEFAULT TRUE | 활성 상태 |
+| `created_at` | TIMESTAMPTZ | NOT NULL DEFAULT NOW() | 생성 시간 |
+| `updated_at` | TIMESTAMPTZ | NOT NULL DEFAULT NOW() | 수정 시간 |
+| `last_collected_at` | TIMESTAMPTZ | - | 마지막 수집 시간 |
+
+**제약조건 & 인덱스:**
+- `CONSTRAINT uq_managed_tickers_symbol UNIQUE(symbol)`
+- `INDEX idx_managed_tickers_active ON managed_tickers(is_active) WHERE is_active = TRUE`
+
+### 타입 정의 (TypeScript)
+
+```typescript
+// stock-dashboard/src/lib/server/kis/types.ts
+
+// DB 저장용 캔들 레코드
+interface CandleRecord {
+  symbol: string;
+  interval: '60m' | 'daily';
+  candle_time: Date;
+  open_price: number;
+  high_price: number;
+  low_price: number;
+  close_price: number;
+  volume: number;
+  source: string;
+}
+
+// 거래소 및 시장 타입
+type Exchange = 'NAS' | 'NYS' | 'AMS';
+type Market = 'us' | 'kr';
+type CandleInterval = '60m' | 'daily';
+```
+
+### Repository 모듈
+
+| 파일 | 용도 |
+|------|------|
+| `stock-dashboard/src/lib/server/db.ts` | PostgreSQL 연결 설정 |
+| `stock-dashboard/src/lib/server/repositories/candle.repository.ts` | 캔들 데이터 CRUD |
+| `stock-crawler/common/db.py` | Python 커넥션 풀 관리 |
+| `stock-crawler/common/ticker_repository.py` | 티커 CRUD (Python) |
+
+---
+
+### 서브에이전트 호출 예시
+
+```
+Phase 1 작업:
+- subagent_type: "kis-data-pipeline" 또는 "general-purpose"
+- prompt: "docs/KIS_API_MIGRATION.md Phase 1을 참조하여 KIS 클라이언트를 구현해주세요"
+
+Phase 2-3 작업:
+- subagent_type: "kis-data-pipeline" 또는 "general-purpose"
+- prompt: "docs/KIS_API_MIGRATION.md Phase 2-3을 참조하여 Repository와 API Routes를 구현해주세요"
+
+Phase 4-6 작업:
+- subagent_type: "general-purpose"
+- prompt: "docs/KIS_API_MIGRATION.md Phase 4-6을 참조하여 환경설정과 UI 연동을 구현해주세요"
 ```
