@@ -1,21 +1,21 @@
-# Build stage
-FROM oven/bun:1-alpine AS builder
+# Build stage - use Node for Vite compatibility
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
 # Copy package files
 COPY package.json bun.lock* ./
 
-# Install dependencies
-RUN bun install
+# Install dependencies with npm (more stable for Vite builds)
+RUN npm install
 
 # Copy source code
 COPY . .
 
 # Sync SvelteKit and build
-RUN bun run prepare && bun run build
+RUN npm run prepare && npm run build
 
-# Production stage
+# Production stage - use Bun for runtime
 FROM oven/bun:1-alpine AS runner
 
 WORKDIR /app
