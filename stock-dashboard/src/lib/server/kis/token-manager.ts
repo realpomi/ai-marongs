@@ -23,17 +23,20 @@ class KisTokenManager {
   async getToken(): Promise<string> {
     // 1. 메모리 캐시 확인
     if (this.cachedToken && this.isValid(this.cachedToken)) {
+      console.log('[KIS] 메모리 캐시에서 토큰 사용');
       return this.cachedToken.access_token;
     }
 
     // 2. 파일에서 로드
     const fileToken = await this.loadFromFile();
     if (fileToken && this.isValid(fileToken)) {
+      console.log('[KIS] 파일에서 토큰 로드 성공');
       this.cachedToken = fileToken;
       return fileToken.access_token;
     }
 
     // 3. 새 토큰 발급
+    console.log('[KIS] 기존 토큰 없음 또는 만료됨 - 새 토큰 발급 필요');
     return this.refreshToken();
   }
 
@@ -63,10 +66,19 @@ class KisTokenManager {
       expires_at: data.access_token_token_expired // KIS 형식: "YYYY-MM-DD HH:mm:ss"
     };
 
-    await this.saveToFile(tokenData);
-    this.cachedToken = tokenData;
+    try {
+      await this.saveToFile(tokenData);
+      this.cachedToken = tokenData;
+      console.log(`[KIS] 토큰 발급 성공 (만료: ${tokenData.expires_at})`);
+      console.log(`[KIS] 토큰 파일 저장 위치: ${this.tokenPath}`);
+    } catch (e) {
+      console.error('[KIS] 토큰 파일 저장 실패:', e);
+      console.error('[KIS] 토큰 디렉토리:', this.tokenDir);
+      console.error('[KIS] 토큰 파일 경로:', this.tokenPath);
+      // 파일 저장 실패해도 메모리 캐시는 유지
+      this.cachedToken = tokenData;
+    }
 
-    console.log(`[KIS] 토큰 발급 성공 (만료: ${tokenData.expires_at})`);
     return tokenData.access_token;
   }
 
@@ -105,12 +117,16 @@ class KisTokenManager {
 
   private async loadFromFile(): Promise<TokenData | null> {
     if (!existsSync(this.tokenPath)) {
+      console.log(`[KIS] 토큰 파일 없음: ${this.tokenPath}`);
       return null;
     }
 
     try {
+      console.log(`[KIS] 토큰 파일 읽기 시도: ${this.tokenPath}`);
       const content = await readFile(this.tokenPath, 'utf-8');
-      return JSON.parse(content);
+      const token = JSON.parse(content);
+      console.log(`[KIS] 토큰 파일 로드 성공 (만료: ${token.expires_at})`);
+      return token;
     } catch (e) {
       console.warn('[KIS] 토큰 파일 파싱 실패:', e);
       return null;
@@ -118,11 +134,20 @@ class KisTokenManager {
   }
 
   private async saveToFile(token: TokenData): Promise<void> {
-    // 디렉토리가 없으면 생성
-    if (!existsSync(this.tokenDir)) {
-      await mkdir(this.tokenDir, { recursive: true });
+    try {
+      // 디렉토리가 없으면 생성
+      if (!existsSync(this.tokenDir)) {
+        console.log(`[KIS] 토큰 디렉토리 생성: ${this.tokenDir}`);
+        await mkdir(this.tokenDir, { recursive: true });
+      }
+
+      console.log(`[KIS] 토큰 파일 저장 시도: ${this.tokenPath}`);
+      await writeFile(this.tokenPath, JSON.stringify(token, null, 2));
+      console.log(`[KIS] 토큰 파일 저장 완료`);
+    } catch (e) {
+      console.error('[KIS] saveToFile 오류:', e);
+      throw e;
     }
-    await writeFile(this.tokenPath, JSON.stringify(token, null, 2));
   }
 }
 

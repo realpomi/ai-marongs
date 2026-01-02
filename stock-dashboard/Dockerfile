@@ -22,6 +22,9 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
+# Install curl for healthchecks and manual API calls
+RUN apk add --no-cache curl
+
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 sveltekit
@@ -32,6 +35,9 @@ COPY --from=builder /app/package.json ./
 
 # Install production dependencies only
 RUN bun install --production
+
+# Create data directory for token storage
+RUN mkdir -p /app/data && chown -R sveltekit:nodejs /app/data
 
 # Change ownership
 RUN chown -R sveltekit:nodejs /app
