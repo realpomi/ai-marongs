@@ -6,6 +6,7 @@
   let { children, data } = $props();
   let showModal = $state(false);
   let isEditMode = $state(false);
+  let sidebarOpen = $state(false);
   let symbol = $state('');
   let exchange = $state('NAS');
   let name = $state('');
@@ -62,11 +63,45 @@
 </script>
 
 <div class="flex h-screen bg-gray-100 font-sans">
+  <!-- Mobile Header -->
+  <div class="md:hidden fixed top-0 left-0 right-0 bg-white shadow-md z-40 flex items-center justify-between px-4 py-3">
+    <button
+      onclick={() => sidebarOpen = !sidebarOpen}
+      type="button"
+      class="p-2 rounded-md text-gray-600 hover:bg-gray-100"
+    >
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+      </svg>
+    </button>
+    <h1 class="text-lg font-bold text-gray-800">
+      <a href="/">Stock Dashboard</a>
+    </h1>
+    <button
+      onclick={openAddModal}
+      type="button"
+      class="w-8 h-8 flex items-center justify-center rounded bg-blue-500 text-white hover:bg-blue-600 text-lg font-bold"
+      title="티커 추가"
+    >
+      +
+    </button>
+  </div>
+
+  <!-- Mobile Overlay -->
+  {#if sidebarOpen}
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      class="md:hidden fixed inset-0 bg-black/50 z-40"
+      onclick={() => sidebarOpen = false}
+    ></div>
+  {/if}
+
   <!-- Sidebar -->
-  <aside class="w-64 bg-white shadow-md flex flex-col">
+  <aside class="fixed md:static inset-y-0 left-0 z-50 w-64 bg-white shadow-md flex flex-col transform transition-transform duration-200 ease-in-out {sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0">
     <div class="p-4 border-b">
       <h1 class="text-xl font-bold text-gray-800">
-        <a href="/">Stock Dashboard</a>
+        <a href="/" onclick={() => sidebarOpen = false}>Stock Dashboard</a>
       </h1>
     </div>
     <nav class="flex-1 overflow-y-auto p-4">
@@ -88,6 +123,7 @@
           <li class="group flex items-center">
             <a
               href="/ticker/{ticker.symbol}"
+              onclick={() => sidebarOpen = false}
               class="flex-1 block px-3 py-2 rounded-md text-sm transition-colors {page.url.pathname === `/ticker/${ticker.symbol}` ? 'bg-blue-100 text-blue-700 font-bold' : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'}"
             >
               <span class="font-medium">{ticker.symbol}</span>
@@ -115,7 +151,7 @@
   </aside>
 
   <!-- Main Content -->
-  <main class="flex-1 overflow-y-auto p-8">
+  <main class="flex-1 overflow-y-auto p-4 md:p-8 pt-16 md:pt-8 md:ml-0">
     {@render children()}
   </main>
 </div>

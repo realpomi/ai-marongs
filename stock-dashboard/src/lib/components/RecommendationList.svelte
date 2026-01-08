@@ -42,21 +42,21 @@
 	}
 </script>
 
-<div class="bg-gray-900 text-white rounded-2xl p-6 shadow-2xl border border-gray-800 w-full max-w-2xl overflow-hidden relative">
+<div class="bg-gray-900 text-white rounded-2xl p-4 md:p-6 shadow-2xl border border-gray-800 w-full max-w-2xl overflow-hidden relative">
 	<!-- Subtle background gradient -->
-	<div class="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-	<div class="absolute bottom-0 left-0 w-64 h-64 bg-green-500/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
+	<div class="absolute top-0 right-0 w-32 md:w-64 h-32 md:h-64 bg-blue-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+	<div class="absolute bottom-0 left-0 w-32 md:w-64 h-32 md:h-64 bg-green-500/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
 
-	<div class="flex justify-between items-center mb-6 relative z-10">
+	<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 md:mb-6 relative z-10">
 		<div>
-			<h2 class="text-xl font-bold text-gray-100 flex items-center gap-2">
-				<span class="text-2xl">⚡️</span> 시장 분석 리포트
+			<h2 class="text-lg md:text-xl font-bold text-gray-100 flex items-center gap-2">
+				<span class="text-xl md:text-2xl">⚡️</span> 시장 분석 리포트
 			</h2>
-			<p class="text-xs text-gray-400 mt-1">
+			<p class="text-[10px] md:text-xs text-gray-400 mt-1">
 				알고리즘 기반 매수 추천 및 관심 종목
 			</p>
 		</div>
-		<button 
+		<button
 			onclick={fetchSignals}
 			class="text-xs bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded-lg border border-gray-700 transition-all flex items-center gap-1.5 text-gray-300 hover:text-white"
 		>
@@ -89,45 +89,45 @@
 					<div class="grid gap-3">
 						{#each recommendations as item}
 							{@const scoreColor = getGradeColor(item.score)}
-							<a 
+							<a
 								href="/ticker/{item.symbol}"
-								class="group block bg-gray-800/60 hover:bg-gray-700/80 p-4 rounded-xl border border-yellow-500/20 hover:border-yellow-500/50 transition-all hover:-translate-y-0.5 shadow-lg shadow-black/20"
+								class="group block bg-gray-800/60 hover:bg-gray-700/80 p-3 md:p-4 rounded-xl border border-yellow-500/20 hover:border-yellow-500/50 transition-all hover:-translate-y-0.5 shadow-lg shadow-black/20"
 							>
-								<div class="flex items-center justify-between">
-									<div class="flex items-center gap-3">
-										<div>
-											<div class="flex items-center gap-2">
-												<span class="font-bold text-lg tracking-tight group-hover:text-yellow-400 transition-colors">
+								<div class="flex items-center justify-between gap-2">
+									<div class="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
+										<div class="min-w-0">
+											<div class="flex flex-wrap items-center gap-1 md:gap-2">
+												<span class="font-bold text-base md:text-lg tracking-tight group-hover:text-yellow-400 transition-colors">
 													{item.symbol}
 												</span>
-												<span class="text-xs font-mono text-gray-400">
+												<span class="text-[10px] md:text-xs font-mono text-gray-400">
 													${Number(item.current_price).toLocaleString()}
 												</span>
 											</div>
 											<div class="flex gap-1.5 mt-1">
-												<span class="text-[10px] px-1.5 py-0.5 rounded bg-yellow-900/30 text-yellow-300 border border-yellow-800/30 font-bold">
+												<span class="text-[9px] md:text-[10px] px-1.5 py-0.5 rounded bg-yellow-900/30 text-yellow-300 border border-yellow-800/30 font-bold">
 													Lv.{item.signal_level} {item.signal_keyword}
 												</span>
 											</div>
 										</div>
 									</div>
 
-									<div class="text-right">
-										<div class="text-xs text-gray-400 mb-1">Score</div>
-										<div class="flex items-center justify-end gap-2">
-											<div class="flex gap-0.5">
+									<div class="text-right shrink-0">
+										<div class="text-[10px] md:text-xs text-gray-400 mb-1">Score</div>
+										<div class="flex items-center justify-end gap-1 md:gap-2">
+											<div class="hidden sm:flex gap-0.5">
 												{#each Array(5) as _, j}
 													<div class="w-1.5 h-1.5 rounded-full {j < item.score ? scoreColor : 'bg-gray-700'}"></div>
 												{/each}
 											</div>
-											<span class="font-bold text-lg {scoreColor}">{item.score}</span>
+											<span class="font-bold text-base md:text-lg {scoreColor}">{item.score}</span>
 										</div>
 									</div>
 								</div>
-								
-								<div class="mt-3 pt-3 border-t border-gray-700/50 flex items-start gap-2">
-									<span class="text-yellow-400 text-xs">💡</span>
-									<p class="text-xs text-gray-400 line-clamp-1 group-hover:text-gray-300 transition-colors">
+
+								<div class="mt-2 md:mt-3 pt-2 md:pt-3 border-t border-gray-700/50 flex items-start gap-2">
+									<span class="text-yellow-400 text-[10px] md:text-xs">💡</span>
+									<p class="text-[10px] md:text-xs text-gray-400 line-clamp-2 md:line-clamp-1 group-hover:text-gray-300 transition-colors">
 										{item.signal_message}
 									</p>
 								</div>
@@ -151,27 +151,27 @@
 					<div class="grid gap-2">
 						{#each watchlist as item}
 							{@const scoreColor = getGradeColor(item.score)}
-							<a 
+							<a
 								href="/ticker/{item.symbol}"
-								class="group block bg-gray-800/40 hover:bg-gray-700/60 p-3 rounded-lg border border-gray-700/50 hover:border-blue-500/30 transition-all hover:pl-4"
+								class="group block bg-gray-800/40 hover:bg-gray-700/60 p-2.5 md:p-3 rounded-lg border border-gray-700/50 hover:border-blue-500/30 transition-all hover:pl-3 md:hover:pl-4"
 							>
-								<div class="flex items-center justify-between">
-									<div class="flex items-center gap-3">
-										<span class="font-bold text-base text-gray-300 group-hover:text-blue-300 transition-colors">
+								<div class="flex items-center justify-between gap-2">
+									<div class="flex flex-wrap items-center gap-1.5 md:gap-3 min-w-0">
+										<span class="font-bold text-sm md:text-base text-gray-300 group-hover:text-blue-300 transition-colors">
 											{item.symbol}
 										</span>
-										<span class="text-[10px] px-1.5 py-0.5 rounded bg-gray-700 text-gray-300">
+										<span class="text-[9px] md:text-[10px] px-1 md:px-1.5 py-0.5 rounded bg-gray-700 text-gray-300">
 											Lv.{item.signal_level} {item.signal_keyword}
 										</span>
 									</div>
-									
-									<div class="flex items-center gap-3">
-										<span class="text-xs font-mono text-gray-500">${Number(item.current_price).toLocaleString()}</span>
-										<div class="flex items-center gap-1.5">
-											<span class="text-xs text-gray-500">Score</span>
-											<span class="font-bold text-sm {scoreColor}">{item.score}</span>
+
+									<div class="flex items-center gap-2 md:gap-3 shrink-0">
+										<span class="hidden sm:inline text-[10px] md:text-xs font-mono text-gray-500">${Number(item.current_price).toLocaleString()}</span>
+										<div class="flex items-center gap-1 md:gap-1.5">
+											<span class="text-[10px] md:text-xs text-gray-500">Score</span>
+											<span class="font-bold text-xs md:text-sm {scoreColor}">{item.score}</span>
 										</div>
-										<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 text-gray-600 group-hover:text-blue-400">
+										<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3 h-3 md:w-4 md:h-4 text-gray-600 group-hover:text-blue-400">
 											<path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
 										</svg>
 									</div>
