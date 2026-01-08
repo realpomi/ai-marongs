@@ -144,6 +144,27 @@
           <li class="text-sm text-gray-400">No tickers found.</li>
         {/each}
       </ul>
+
+      <!-- News Menu -->
+      <div class="mt-6 pt-4 border-t border-gray-200">
+        <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+          News
+        </h2>
+        <ul class="space-y-1">
+          <li>
+            <a
+              href="/news"
+              onclick={() => sidebarOpen = false}
+              class="flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors {page.url.pathname.startsWith('/news') ? 'bg-blue-100 text-blue-700 font-bold' : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'}"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+              </svg>
+              <span>뉴스 피드</span>
+            </a>
+          </li>
+        </ul>
+      </div>
     </nav>
     <div class="p-4 border-t text-xs text-center text-gray-400">
       AI Marongs © 2025
