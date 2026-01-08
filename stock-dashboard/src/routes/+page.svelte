@@ -52,12 +52,12 @@
 	<title>Stock Dashboard</title>
 </svelte:head>
 
-<div class="flex flex-col items-center justify-center min-h-full py-10 text-center gap-10">
+<div class="flex flex-col items-center justify-center min-h-full py-4 md:py-10 text-center gap-6 md:gap-10 px-2 md:px-0">
 	<!-- Top Ranking Section -->
 	<RecommendationList />
 
 	<!-- Signal Analysis Section -->
-	<div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 w-full max-w-lg">
+	<div class="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-200 w-full max-w-lg">
 		<h2 class="text-lg font-bold text-gray-800 mb-4">Signal Analysis</h2>
 
 		<div class="flex gap-3 justify-center mb-4">
