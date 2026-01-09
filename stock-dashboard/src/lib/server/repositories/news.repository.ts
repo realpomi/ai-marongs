@@ -1,5 +1,8 @@
 import sql from '$lib/server/db';
 
+// 테이블 초기화 여부 플래그
+let tablesInitialized = false;
+
 /**
  * 뉴스 세션 테이블 스키마
  *
@@ -47,6 +50,8 @@ export interface NewsItemRecord {
  * 뉴스 테이블이 존재하는지 확인하고 없으면 생성
  */
 export async function ensureNewsTablesExist(): Promise<void> {
+  if (tablesInitialized) return;
+
   // news_sessions 테이블 생성
   await sql`
     CREATE TABLE IF NOT EXISTS news_sessions (
@@ -85,6 +90,7 @@ export async function ensureNewsTablesExist(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_news_items_ticker ON news_items(ticker)
   `;
 
+  tablesInitialized = true;
   console.log('[DB] news_sessions, news_items 테이블 확인 완료');
 }
 
@@ -152,6 +158,9 @@ export async function getNewsItemsBySessionId(sessionId: number): Promise<NewsIt
  * 최근 뉴스 세션 조회 (페이지네이션)
  */
 export async function getRecentNewsSessions(limit: number = 10, offset: number = 0): Promise<NewsSession[]> {
+  // 테이블이 없으면 빈 배열 반환
+  await ensureNewsTablesExist();
+
   return sql`
     SELECT id, source, news_date, created_at
     FROM news_sessions
