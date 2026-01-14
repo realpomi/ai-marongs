@@ -185,66 +185,58 @@
             const macdLineSeries = macdChartInstance.addSeries(LineSeries, {
                 color: '#2962FF',
                 lineWidth: 2,
-                title: 'MACD',
             });
 
             const signalLineSeries = macdChartInstance.addSeries(LineSeries, {
                 color: '#FF6D00',
                 lineWidth: 2,
-                title: 'Signal',
             });
 
             const histogramSeries = macdChartInstance.addSeries(HistogramSeries, {
                 color: '#26a69a',
-                title: 'Histogram',
             });
 
             // Indicators on Price Chart
             const sma20Series = candleChartInstance.addSeries(LineSeries, {
                 color: '#2962FF',
                 lineWidth: 1,
-                title: 'SMA 20',
             });
 
             const sma60Series = candleChartInstance.addSeries(LineSeries, {
                 color: '#FF6D00',
                 lineWidth: 1,
-                title: 'SMA 60',
             });
 
             const bbUpperSeries = candleChartInstance.addSeries(LineSeries, {
                 color: 'rgba(128, 128, 128, 0.4)',
                 lineWidth: 1,
                 lineStyle: 2, // Dashed
-                title: 'BB Upper',
             });
 
             const bbMiddleSeries = candleChartInstance.addSeries(LineSeries, {
                 color: 'rgba(128, 128, 128, 0.2)',
                 lineWidth: 1,
                 lineStyle: 2, // Dashed
-                title: 'BB Middle',
             });
 
             const bbLowerSeries = candleChartInstance.addSeries(LineSeries, {
                 color: 'rgba(128, 128, 128, 0.4)',
                 lineWidth: 1,
                 lineStyle: 2, // Dashed
-                title: 'BB Lower',
             });
 
             const reversed = [...data.dailyCandles].sort((a, b) => new Date(a.candle_time).getTime() - new Date(b.candle_time).getTime());
             
             // Map data
-            const candleData = [];
-            const sma20Data = [];
-            const sma60Data = [];
-            const bbUpperData = [];
-            const bbMiddleData = [];
-            const bbLowerData = [];
-            const macdData = [];
-            const signalData = [];
-            const histogramData = [];
+            const candleData: any[] = [];
+            const sma20Data: any[] = [];
+            const sma60Data: any[] = [];
+            const bbUpperData: any[] = [];
+            const bbMiddleData: any[] = [];
+            const bbLowerData: any[] = [];
+            const macdData: any[] = [];
+            const signalData: any[] = [];
+            const histogramData: any[] = [];
 
             // Helper to find indicator value by time
             const findInd = (list: any[], time: string) => list?.find(i => i.time === time);
@@ -617,10 +609,19 @@
   <div class="mb-4 md:mb-8 bg-white p-3 md:p-4 rounded-lg shadow">
     <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-3 md:mb-4">
         <h2 class="text-base md:text-xl font-bold text-gray-800">주가 차트 (Daily)</h2>
-        <div class="flex flex-wrap gap-1 md:gap-2">
-          <span class="px-1.5 md:px-2 py-0.5 rounded text-[10px] md:text-xs font-bold bg-blue-50 text-blue-600 border border-blue-200">SMA 20</span>
-          <span class="px-1.5 md:px-2 py-0.5 rounded text-[10px] md:text-xs font-bold bg-orange-50 text-orange-600 border border-orange-200">SMA 60</span>
-          <span class="px-1.5 md:px-2 py-0.5 rounded text-[10px] md:text-xs font-bold bg-gray-50 text-gray-600 border border-gray-200">BB</span>
+        <div class="flex flex-wrap gap-3 md:gap-4 items-center">
+          <div class="flex items-center gap-1.5">
+            <div class="w-4 h-0.5 bg-[#2962FF]"></div>
+            <span class="text-xs md:text-sm font-medium text-gray-600">SMA 20</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <div class="w-4 h-0.5 bg-[#FF6D00]"></div>
+            <span class="text-xs md:text-sm font-medium text-gray-600">SMA 60</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <div class="w-4 h-0.5 border-t-2 border-gray-400 border-dashed"></div>
+            <span class="text-xs md:text-sm font-medium text-gray-600">Bollinger Bands</span>
+          </div>
         </div>
     </div>
     <!-- Chart Container -->
@@ -632,9 +633,19 @@
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3 md:mb-4">
         <div class="flex flex-wrap items-center gap-2 md:gap-3">
           <h2 class="text-base md:text-xl font-bold text-gray-800">MACD (추세 강도)</h2>
-          <div class="flex gap-1 md:gap-2">
-            <span class="px-1.5 md:px-2 py-0.5 rounded text-[10px] md:text-xs font-bold bg-blue-50 text-blue-600 border border-blue-200">MACD</span>
-            <span class="px-1.5 md:px-2 py-0.5 rounded text-[10px] md:text-xs font-bold bg-orange-50 text-orange-600 border border-orange-200">Signal</span>
+          <div class="flex flex-wrap gap-3 md:gap-4 items-center">
+            <div class="flex items-center gap-1.5">
+              <div class="w-4 h-0.5 bg-[#2962FF]"></div>
+              <span class="text-xs md:text-sm font-medium text-gray-600">MACD</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <div class="w-4 h-0.5 bg-[#FF6D00]"></div>
+              <span class="text-xs md:text-sm font-medium text-gray-600">Signal</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <div class="w-3 h-3 bg-[#26a69a] opacity-50"></div>
+              <span class="text-xs md:text-sm font-medium text-gray-600">Histogram</span>
+            </div>
           </div>
         </div>
         {#if data.indicators?.macd}
