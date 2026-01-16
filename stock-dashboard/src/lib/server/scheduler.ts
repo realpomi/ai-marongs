@@ -51,8 +51,8 @@ class DailyCollectScheduler {
   };
 
   /**
-   * 스케줄러 시작 (매일 08:00 KST = 23:00 UTC)
-   * KST는 UTC+9이므로 08:00 KST = 23:00 UTC (전날)
+   * 스케줄러 시작 (매일 06:00 KST = 21:00 UTC)
+   * KST는 UTC+9이므로 06:00 KST = 21:00 UTC (전날)
    */
   start() {
     if (this.task) {
@@ -60,8 +60,8 @@ class DailyCollectScheduler {
       return;
     }
 
-    // 매일 23:00 UTC = 08:00 KST
-    this.task = cron.schedule('0 23 * * *', async () => {
+    // 매일 21:00 UTC = 06:00 KST
+    this.task = cron.schedule('0 21 * * *', async () => {
       await this.collectAllTickers();
     }, {
       timezone: 'UTC'
@@ -69,7 +69,7 @@ class DailyCollectScheduler {
 
     this.status.isRunning = true;
     this.updateNextRun();
-    console.log('[Scheduler] 일봉 수집 스케줄러 시작 (매일 08:00 KST)');
+    console.log('[Scheduler] 일봉 수집 스케줄러 시작 (매일 06:00 KST)');
   }
 
   /**
