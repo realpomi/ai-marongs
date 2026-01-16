@@ -17,6 +17,9 @@
       "Bash(git -C /Users/realpomi/Documents/develop/private/ai-marongs status stock-dashboard/src/lib/server/)",
       "Bash(git -C /Users/realpomi/Documents/develop/private/ai-marongs ls-files:*)",
       "Bash(npm install:*)"
+    ],
+    "additionalDirectories": [
+      "/Users/realpomi/Documents/develop/private/ai-marongs/stock-dashboard/src/routes"
     ]
   }
 }
