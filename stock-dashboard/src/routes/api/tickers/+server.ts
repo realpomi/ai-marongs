@@ -1,6 +1,8 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import sql from '$lib/server/db';
+import { tickerInitQueue } from '$lib/server/ticker-init-queue';
+import type { Exchange } from '$lib/server/kis/types';
 
 export const POST: RequestHandler = async ({ request }) => {
   try {
@@ -11,7 +13,15 @@ export const POST: RequestHandler = async ({ request }) => {
     }
 
     const upperSymbol = symbol.toUpperCase().trim();
-    const upperExchange = (exchange || 'NAS').toUpperCase().trim();
+    const upperExchange = (exchange || 'NAS').toUpperCase().trim() as Exchange;
+
+    // 기존 티커인지 확인
+    const existing = await sql`
+      SELECT id, symbol FROM managed_tickers
+      WHERE symbol = ${upperSymbol}
+    `;
+
+    const isNewTicker = existing.length === 0;
 
     // 티커 추가 (이미 있으면 업데이트)
     const result = await sql`
@@ -27,10 +37,17 @@ export const POST: RequestHandler = async ({ request }) => {
 
     const ticker = result[0];
 
+    // 새로운 티커인 경우 1년치 데이터 수집 큐에 추가
+    if (isNewTicker) {
+      await tickerInitQueue.add(ticker.symbol, upperExchange);
+      console.log(`[API] 새 티커 ${ticker.symbol} - 1년치 데이터 수집 큐에 추가됨`);
+    }
+
     return json({
       success: true,
       ticker,
-      message: `티커 ${ticker.symbol} 등록 완료`
+      message: `티커 ${ticker.symbol} 등록 완료${isNewTicker ? ' (1년치 데이터 수집 중...)' : ''}`,
+      queuedForInit: isNewTicker
     });
   } catch (error) {
     console.error('Failed to add ticker:', error);

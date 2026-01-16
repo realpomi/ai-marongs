@@ -18,22 +18,53 @@
   let macdChartInstance: any = null;
 
   let updating = $state(false);
+  let fetchingYearlyData = $state(false);
 
   async function updateData() {
     if (updating || !data.ticker?.symbol) return;
-    
+
     updating = true;
     try {
       const symbol = data.ticker.symbol;
       // Update daily candles
       await fetch(`/api/kis/candles/${symbol}?interval=daily&save=true`);
-      
+
       await invalidateAll();
     } catch (error) {
       console.error('Failed to update data:', error);
       alert('데이터 업데이트에 실패했습니다.');
     } finally {
       updating = false;
+    }
+  }
+
+  async function fetchYearlyData() {
+    if (fetchingYearlyData || !data.ticker?.symbol || !data.ticker?.exchange) return;
+
+    fetchingYearlyData = true;
+    try {
+      const symbol = data.ticker.symbol;
+      const exchange = data.ticker.exchange || 'NAS';
+
+      // 큐에 추가
+      const response = await fetch('/api/tickers/queue/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symbol, exchange })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        alert(`${symbol} 1년치 데이터 수집이 큐에 추가되었습니다.\n큐 상태: ${result.queueLength}개 대기 중`);
+      } else {
+        alert('큐 추가 실패: ' + (result.error || '알 수 없는 오류'));
+      }
+    } catch (error) {
+      console.error('Failed to queue yearly data:', error);
+      alert('1년치 데이터 수집 요청에 실패했습니다.');
+    } finally {
+      fetchingYearlyData = false;
     }
   }
 
@@ -361,19 +392,28 @@
 <div class="max-w-4xl mx-auto px-2 md:px-0">
   <div class="mb-4 md:mb-8 border-b pb-4">
     <div class="flex flex-col gap-2">
-      <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-        <div class="flex items-center gap-2 sm:gap-4 flex-wrap">
-          <h1 class="text-2xl md:text-3xl font-bold text-gray-900">{data.ticker?.symbol}</h1>
-          <span class="text-sm px-2 py-1 bg-gray-200 rounded-full text-gray-700">{data.ticker?.exchange}</span>
+      <div class="flex items-center gap-4">
+        <h1 class="text-3xl font-bold text-gray-900">{data.ticker?.symbol}</h1>
+        <div class="flex gap-2">
+          <button
+            onclick={updateData}
+            disabled={updating}
+            class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-blue-700 bg-blue-100 rounded-lg hover:bg-blue-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <span class={updating ? "animate-spin" : ""}>🔄</span>
+            {updating ? '업데이트 중...' : '최신 데이터 가져오기'}
+          </button>
+          <button
+            onclick={fetchYearlyData}
+            disabled={fetchingYearlyData}
+            class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-purple-700 bg-purple-100 rounded-lg hover:bg-purple-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <span class={fetchingYearlyData ? "animate-spin" : ""}>📊</span>
+            {fetchingYearlyData ? '큐에 추가 중...' : '1년치 데이터 가져오기'}
+          </button>
         </div>
-        <button
-          onclick={updateData}
-          disabled={updating}
-          class="flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium text-blue-700 bg-blue-100 rounded-lg hover:bg-blue-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors w-full sm:w-auto"
-        >
-          <span class={updating ? "animate-spin" : ""}>🔄</span>
-          {updating ? '업데이트 중...' : '최신 데이터 가져오기'}
-        </button>
+        <span class="text-xl text-gray-600">{data.ticker?.name}</span>
+        <span class="text-sm px-2 py-1 bg-gray-200 rounded-full text-gray-700">{data.ticker?.exchange}</span>
       </div>
       <span class="text-base md:text-xl text-gray-600">{data.ticker?.name}</span>
       <div class="text-xs md:text-sm text-gray-500">
